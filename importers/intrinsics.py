@@ -4,13 +4,32 @@ import torch
 
 #intrinsics_dict = None
 
-def load_intrinsics_repository(filename):    
+def load_intrinsics_repository(filename, stream='Depth'):    
+    #global intrinsics_dict
+    with open(filename, 'r') as json_file:
+        intrinsics_repository = json.load(json_file)
+
+        if (stream == 'Depth'):
+            intrinsics_dict = dict((intrinsics['Device'], \
+                intrinsics['Depth Intrinsics'][0]['1280x720'])\
+                    for intrinsics in intrinsics_repository)
+        elif (stream == 'RGB'):
+            intrinsics_dict = dict((intrinsics['Device'], \
+                intrinsics['Color Intrinsics'][0]['1280x720'])\
+                    for intrinsics in intrinsics_repository)
+    return intrinsics_dict
+
+def load_rotation_translation(filename):    
     #global intrinsics_dict
     with open(filename, 'r') as json_file:
         intrinsics_repository = json.load(json_file)
         intrinsics_dict = dict((intrinsics['Device'], \
-            intrinsics['Depth Intrinsics'][0]['1280x720'])\
+            {
+                'R' : numpy.asarray(intrinsics['Color Depth Rotation'], dtype=numpy.float32).reshape([1, 3, 3]),
+                't' : numpy.asarray(intrinsics['Color Depth Translation'], dtype=numpy.float32).reshape([3, 1])
+            })\
                 for intrinsics in intrinsics_repository)
+    
     return intrinsics_dict
 
 def get_intrinsics(name, intrinsics_dict, scale=1, data_type=torch.float32):

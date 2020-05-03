@@ -9,28 +9,70 @@ from subprocess import call
 from tempfile import TemporaryDirectory
 from tqdm import tqdm
 
-# from metadata import load_h36m_metadata
+from metadata import load_h4d_metadata
 
 import cv2
 from importers import *
 
-# metadata = load_h36m_metadata()
+import argparse
 
-# # Subjects to include when preprocessing
-# included_subjects = {
-#     'S1': 1,
-#     'S5': 5,
-#     'S6': 6,
-#     'S7': 7,
-#     'S8': 8,
-#     'S9': 9,
-#     'S11': 11,
-# }
+metadata = load_h4d_metadata()
 
-# # Sequences with known issues
-# blacklist = {
-#     ('S11', '2', '2', '54138969'),  # Video file is corrupted
-# }
+# Subjects to include when preprocessing
+included_subjects = {
+    # 'S1': 1,
+    # 'S2': 2,
+    'S3': 3,
+    # 'S4': 4,
+    # 'S1S2': 5,
+    # 'S3S4': 6
+}
+
+# Cameras to include when preprocessing
+included_cameras = {
+    'M72e': 1,
+    'M72h': 2,
+    'M72i': 3,
+    'M72j': 4
+}
+
+# Actions to include when preprocessing
+included_actions = {
+    'running': 1,
+    # 'junping_jack': 2,
+    # 'bending': 3,
+    # 'punching_n_kicking': 4,
+    # 'basketball_dribbling': 5,
+    # 'laying_down': 6,
+    # 'sitting_down': 7,
+    # 'sitting_on_a_chair': 8,
+    # 'talking': 9,
+    # 'object_dropping_n_picking': 10,
+    # 'stretching_n_talking': 11,
+    # 'talking_n_walking': 12,
+    # 'watching_scary_movie': 13,
+    # 'in-flight_safety_announcement': 14,
+    # 'watching_football_together': 15,
+    # 'dancing_together': 16,
+    # 'physical_examination': 17,
+    # 'whispering': 18,
+    # 'card_trick': 19
+}
+
+# Sequences with known issues
+blacklist = {
+    ('S11', '100', '100', '10'),  # Video file is corrupted
+}
+
+parser = argparse.ArgumentParser(description="PyTorch Human4D Processor")
+parser.add_argument(
+        "--dataset_path",
+        default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings",      
+        # default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",      
+        help="path to sequence files",
+    )
+
+args = parser.parse_args()
 
 
 # Rather than include every frame from every video, we can instead wait for the pose to change
@@ -71,21 +113,21 @@ def select_frame_indices_to_include(subject, poses_3d_univ):
 #     return np.array([alpha_x, x_0, alpha_y, y_0])
 
 
-def process_view(sequence_path, out_dir, subject, action, camera):
-    subj_dir = path.join('extracted', subject)
+def process_view(out_dir, subject, action, camera):
+    subj_dir = path.join(args.dataset_path, subject, action)
 
     base_filename = subject + "_" + action
 
     # Load joint position annotations
-    poses_2d = numpy.load(os.path.join(sequence_path, action + "_" + camera + "_2d.npy"))
-    poses_3d_univ = numpy.load(os.path.join(sequence_path, action + "_" + camera + "_3d.npy"))
-    poses_3d = numpy.load(os.path.join(sequence_path, action + "_" + camera + "_3d.npy"))
+    poses_2d = numpy.load(os.path.join(subj_dir, base_filename + "_" + camera + "_2d.npy"))
+    poses_3d_univ = numpy.load(os.path.join(subj_dir, base_filename + "_" + camera + "_3d.npy"))
+    poses_3d = numpy.load(os.path.join(subj_dir, base_filename + "_" + camera + "_3d.npy"))
    
-    device_repo_path = os.path.join(sequence_path, "device_repository.json")
+    device_repo_path = os.path.join(args.dataset_path, "device_repository.json")
     device_repo = load_intrinsics_repository(os.path.join(device_repo_path))
 
     intr, intr_inv = get_intrinsics(camera, device_repo, 1)
-    # Infer camera intrinsics
+    
     camera_int = intr.cpu().numpy()
     camera_int_univ = intr.cpu().numpy()
 
@@ -155,38 +197,34 @@ def process_view(sequence_path, out_dir, subject, action, camera):
         'intrinsics/' + camera: camera_int,
         'intrinsics-univ/' + camera: camera_int_univ,
         'frame': frames,
-        # 'camera': np.full(frames.shape, int(camera)),
-        # 'subject': np.full(frames.shape, int(subject)),
-        # 'action': np.full(frames.shape, int(action)),
-        # 'subaction': np.full(frames.shape, int(subaction)),
-        'camera': np.full(frames.shape, 1),
-        'subject': np.full(frames.shape, 3),
-        'action': np.full(frames.shape, 10),
-        'subaction': np.full(frames.shape, 10),
+        'camera': np.full(frames.shape, int(included_cameras[camera])),
+        'subject': np.full(frames.shape, int(included_cameras[camera])),
+        'action': np.full(frames.shape, int(included_actions[action])),
+        'subaction': np.full(frames.shape, 100000000),
     }
 
 
-def process_subaction(sequence_path, subject, action, camera):
+def process_action(subject, action):
     datasets = {}
 
     out_dir = path.join('processed', subject, action)
     makedirs(out_dir, exist_ok=True)
 
-    # for camera in tqdm(metadata.camera_ids, ascii=True, leave=False):
-    #     if (subject, action, subaction, camera) in blacklist:
-    #         continue
+    for camera in included_cameras:
+        if (subject, action, camera) in blacklist:
+            continue
 
-    try:
-        annots = process_view(sequence_path, out_dir, subject, action, camera)
-    except:
-        print('Error processing sequence, skipping: ', repr((sequence_path, subject, action, camera)))
-        
+        try:
+            annots = process_view(out_dir, subject, action, camera)
+        except:
+            print('Error processing sequence, skipping: ', repr((subject, action, camera)))
+            
 
-    for k, v in annots.items():
-        if k in datasets:
-            datasets[k].append(v)
-        else:
-            datasets[k] = [v]
+        for k, v in annots.items():
+            if k in datasets:
+                datasets[k].append(v)
+            else:
+                datasets[k] = [v]
 
     if len(datasets) == 0:
         return
@@ -199,20 +237,18 @@ def process_subaction(sequence_path, subject, action, camera):
 
 
 def process_all():
-    # sequence_mappings = metadata.sequence_mappings
+    sequence_mappings = metadata.sequence_mappings
 
-    # subactions = []
+    actions = []
 
-    # for subject in included_subjects.keys():
-    #     subactions += [
-    #         (subject, action, subaction)
-    #         for action, subaction in sequence_mappings[subject].keys()
-    #         if int(action) > 1  # Exclude '_ALL'
-    #     ]
+    for subject in included_subjects.keys():
+        actions += [
+            (subject, action)
+            for action in included_actions
+        ]
 
-    # or subject, action, subaction in tqdm(subactions, ascii=True, leave=False):
-    process_subaction("E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/19-07-12-10-12-49","S3", "INF_Running_S3_01_eval", "M72j")
-
+    for subject, action in tqdm(actions, ascii=True, leave=False):
+        process_action(subject, action)
 
 if __name__ == '__main__':
   process_all()

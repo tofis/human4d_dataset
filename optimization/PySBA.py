@@ -34,14 +34,14 @@ import cv2
 class PySBA:
     """Python class for Simple Bundle Adjustment"""
 
-    def __init__(self, cameraArray, points3D, points2D, cameraIndices, point2DIndices):
+    def __init__(self, cameraArray, points3D, points2D, cameraIndices, point2DIndices, pp, imgs, fs):
         """Intializes all the class attributes and instance variables.
             Write the specifications for each variable:
 
-            cameraArray with shape (n_cameras, 9) contains initial estimates of parameters for all cameras.
+            cameraArray with shape (n_cameras, 6) contains initial estimates of parameters for all cameras.
                     First 3 components in each row form a rotation vector,
                     next 3 components form a translation vector,
-                    then a focal distance and two distortion parameters.
+                    then a focal distance.
 
             points_3d with shape (n_points, 3)
                     contains initial estimates of point coordinates in the world frame.
@@ -61,6 +61,13 @@ class PySBA:
 
         self.cameraIndices = cameraIndices
         self.point2DIndices = point2DIndices
+        self.pp = pp
+        self.imgs = imgs
+        self.fs = fs 
+
+        points_proj = self.rotate(points3D[point2DIndices], cameraArray[cameraIndices][:, :3])
+        points_proj += cameraArray[cameraIndices][:, 3:6]
+        points_proj = points_proj[:, :2] / points_proj[:, 2, np.newaxis]       
 
     def rotate(self, points, rot_vecs):
         """Rotate points by given rotation vectors.
@@ -78,17 +85,20 @@ class PySBA:
         return cos_theta * points + sin_theta * np.cross(v, points) + dot * (1 - cos_theta) * v
 
 
-    def project(self, points, cameraArray):
+    def project(self, points, init_points, cameraArray, init_cameraArray):
         """Convert 3-D points to 2-D by projecting onto images."""
-        points_proj = self.rotate(points, cameraArray[:, :3])
+        points_proj = self.rotate(init_points, cameraArray[:, :3])
         points_proj += cameraArray[:, 3:6]
         points_proj = points_proj[:, :2] / points_proj[:, 2, np.newaxis]
-        f = cameraArray[:, 6]
-        k1 = cameraArray[:, 7]
-        k2 = cameraArray[:, 8]
-        n = np.sum(points_proj ** 2, axis=1)
-        r = 1 + k1 * n + k2 * n ** 2
-        points_proj *= (r * f)[:, np.newaxis]
+        # f = cameraArray[:, 6]
+        # k1 = cameraArray[:, 7]
+        # k2 = cameraArray[:, 8]
+        # n = np.sum(points_proj ** 2, axis=1)
+        # r = 1 + k1 * n + k2 * n ** 2
+        # r = 1
+        # points_proj *= (r * f)[:, np.newaxis]
+        # points_proj *= f[:, np.newaxis]
+        points_proj *= np.asarray(self.fs)[self.cameraIndices][:, np.newaxis]
         return points_proj
 
 
@@ -97,44 +107,52 @@ class PySBA:
 
         `params` contains camera parameters and 3-D coordinates.
         """
-        camera_params = params[:n_cameras * 9].reshape((n_cameras, 9))
-        points_3d = params[n_cameras * 9:].reshape((n_points, 3))
-        points_proj = self.project(points_3d[point_indices], camera_params[camera_indices])
+        camera_params = params[:n_cameras * 6].reshape((n_cameras, 6))
+        points_3d = params[n_cameras * 6:].reshape((n_points, 3))
+        points_proj = self.project(points_3d[point_indices], self.points3D[point_indices], camera_params[camera_indices], self.cameraArray[camera_indices])
+        
+        imgs_c = []
+        for img in self.imgs:
+            imgs_c.append(img.copy())
 
-        img_c = np.zeros([720, 1280, 3], dtype=np.uint8)
-        for p in points_2d:
-            img_c = cv2.drawMarker(img_c, 
-                (int(p[0]), int(p[1])), 
+        p_index = 0
+        for p in points_2d:            
+            imgs_c[camera_indices[p_index]] = cv2.drawMarker(imgs_c[camera_indices[p_index]], 
+                (int(p[0]) + self.pp[self.cameraIndices[p_index]][0], int(p[1]) + self.pp[self.cameraIndices[p_index]][1]), 
                 (255, 0, 0),
                 markerType=cv2.MARKER_CROSS,
                 markerSize=15,
                 thickness=2)
+            p_index += 1
+        p_index = 0
         for p in points_proj:
-            img_c = cv2.drawMarker(img_c, 
-                (int(p[0]), int(p[1])), 
+            imgs_c[camera_indices[p_index]] = cv2.drawMarker(imgs_c[camera_indices[p_index]], 
+                (int(p[0]) + self.pp[self.cameraIndices[p_index]][0], int(p[1]) + self.pp[self.cameraIndices[p_index]][1]), 
                 (0, 255, 0),
                 markerType=cv2.MARKER_SQUARE,
                 markerSize=15,
                 thickness=2)
+            p_index += 1
 
-        cv2.imshow("step", img_c)
-        cv2.waitKey()
+        for i in range(len(imgs_c)):
+            cv2.imshow(str(i), cv2.transpose(imgs_c[i]))
+        cv2.waitKey(10)
 
         return (points_proj - points_2d).ravel()
 
     def bundle_adjustment_sparsity(self, numCameras, numPoints, cameraIndices, pointIndices):
         m = cameraIndices.size * 2
-        n = numCameras * 9 + numPoints * 3
+        n = numCameras * 6 + numPoints * 3
         A = lil_matrix((m, n), dtype=int)
 
         i = np.arange(cameraIndices.size)
-        for s in range(9):
-            A[2 * i, cameraIndices * 9 + s] = 1
-            A[2 * i + 1, cameraIndices * 9 + s] = 1
+        for s in range(6):
+            A[2 * i, cameraIndices * 6 + s] = 1
+            A[2 * i + 1, cameraIndices * 6 + s] = 1
 
         for s in range(3):
-            A[2 * i, numCameras * 9 + pointIndices * 3 + s] = 1
-            A[2 * i + 1, numCameras * 9 + pointIndices * 3 + s] = 1
+            A[2 * i, numCameras * 6 + pointIndices * 3 + s] = 1
+            A[2 * i + 1, numCameras * 6 + pointIndices * 3 + s] = 1
 
         return A
 
@@ -143,8 +161,8 @@ class PySBA:
         """
         Retrieve camera parameters and 3-D coordinates.
         """
-        camera_params = params[:n_cameras * 9].reshape((n_cameras, 9))
-        points_3d = params[n_cameras * 9:].reshape((n_points, 3))
+        camera_params = params[:n_cameras * 6].reshape((n_cameras, 6))
+        points_3d = params[n_cameras * 6:].reshape((n_points, 3))
 
         return camera_params, points_3d
 
@@ -159,8 +177,8 @@ class PySBA:
         f0 = self.fun(x0, numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D)
 
         A = self.bundle_adjustment_sparsity(numCameras, numPoints, self.cameraIndices, self.point2DIndices)
-
-        res = least_squares(self.fun, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-4, method='trf',
+        self.init_params = A.copy()
+        res = least_squares(self.fun, x0, jac_sparsity=A, verbose=2, x_scale='jac', ftol=1e-6, method='trf',
                             args=(numCameras, numPoints, self.cameraIndices, self.point2DIndices, self.points2D))
 
         params = self.optimizedParams(res.x, numCameras, numPoints)
