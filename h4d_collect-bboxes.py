@@ -12,7 +12,7 @@ import h5py
 
 # dataset_root = sys.argv[1]
 dataset_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data"
-data_path = os.path.join(dataset_root, "Recordings")
+data_path = os.path.join(dataset_root, "Recordings/experimentation_dataset")
 subjects = [x for x in os.listdir(data_path) if x.startswith('S')]
 # assert len(subjects) == 7
 assert len(subjects) == 1
@@ -58,6 +58,7 @@ def load_bboxes(data_path, subject, action, camera):
             '%s_%s_%s_bbox.npy' % (subject, action, camera))
 
         retval = numpy.load(bboxes_path)
+        retval = retval[:, 0, :] # TODO: person id
             
         print("ok")
             # retval[]
@@ -95,7 +96,8 @@ if __name__ == '__main__':
 
     for subject in subjects:
         subject_path = os.path.join(data_path, subject)
-        actions = [action for action in os.listdir(subject_path) if "." not in action]
+        # actions = [action for action in os.listdir(subject_path) if "." not in action]
+        actions = ['talking']
         try:
             actions.remove('MySegmentsMat') # folder with bbox *.mat files
         except ValueError:

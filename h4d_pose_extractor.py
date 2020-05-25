@@ -35,7 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch Show Pose and Pointcloud")
     parser.add_argument(
         "--show_markers",
-        default=False,      
+        default=True,      
         help="render marker positions",
     )
     parser.add_argument(
@@ -56,15 +56,15 @@ def main():
     parser.add_argument(
         "--sequence_path",
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/19-07-12-10-12-49",      
-        default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-01-38",      
-        # default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",      
+        # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-01-38",      
+        default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",      
         help="path to sequence files",
     )
     parser.add_argument(
         "--sequence_filename", 
-        default="RGB_Talking_S3_01",
+        # default="RGB_Talking_S3_01",
         # default="INF_Running_S3_01_eval",
-        # default="RGB_WatchingFootball_S1S2_02_eval",      
+        default="RGB_WatchingFootball_S1S2_02_eval",      
         help="path to sequence files",
     )
     parser.add_argument(
@@ -82,52 +82,45 @@ def main():
 
     args = parser.parse_args()
 
-    # trying CDF format
-
-    # test_sequence_2d = numpy.ones([10, 33 * 2])
-    # size = numpy.zeros([10])
-
-    # cdf = pycdf.CDF(args.sequence_filename + '__.cdf', '')
-    # cdf['Pose'] = pycdf.numpy.zeros([10, 66])
-    # for i in range(10):
-    #     cdf['Pose'].insert(i, test_sequence_2d[i])
-    # cdf.close()
-
     COLORS = get_COLORS()
 
-    device_repo_path = os.path.join(args.sequence_path,"device_repository.json")
+    device_repo_path = os.path.join(args.sequence_path,"../../device_repository.json")
     if not os.path.exists(device_repo_path):
         raise ValueError("{0} does not exist".format(device_repo_path))            
     device_repo = load_intrinsics_repository(os.path.join(device_repo_path))
     device_repo_rgb = load_intrinsics_repository(os.path.join(device_repo_path), stream='RGB')
     device_repo_RT = load_rotation_translation(os.path.join(device_repo_path))
    
-    extr_files = [current_ for current_ in os.listdir(args.sequence_path) if ".extrinsics" in current_]
+    extr_files = [current_ for current_ in os.listdir(os.path.join(args.sequence_path, "../poses")) if ".extrinsics" in current_]
 
     extrinsics = {}
     paths = {}
     views = []
 
     for extr in extr_files:
-        extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(args.sequence_path, extr))[0]
-        paths[extr.split(".")[0]] = os.path.join(args.sequence_path, extr.split(".")[0])
+        extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(args.sequence_path, "../poses", extr))[0]
+        paths[extr.split(".")[0]] = os.path.join(args.sequence_path, "../poses", extr.split(".")[0])
         views.append(extr.split(".")[0])
 
     gt_joints = load_joints_seq(os.path.join(args.sequence_path, args.sequence_filename + ".joints"))
     gt_markers = load_markers_seq(os.path.join(args.sequence_path, args.sequence_filename + ".markers"))
+
+    # gt_joints = numpy.expand_dims(gt_joints[:, 0, :, :], axis=1)
+    # gt_markers = numpy.expand_dims(gt_markers[:, 0, :, :], axis=1)
+
     time_step = 8.33333
     translation_gt = torch.tensor([59.0,  80.0, 820.0]).reshape(3, 1)
     r = R.from_euler('xyz',[0, -2, 124.5], degrees=True)
     rotation_gt_np = r.as_matrix()
 
-    q = r.inv().as_quat()
+    # q = r.inv().as_quat()
 
     rotation_gt = torch.from_numpy(rotation_gt_np).type(torch.float)
 
     rotation_gt_inv = torch.inverse(rotation_gt)
     translation_gt_inv = - rotation_gt_inv @ translation_gt
-    gt_markers_t = torch.from_numpy(gt_markers).reshape(gt_markers.shape[0], gt_markers.shape[1], gt_markers.shape[2], 1).permute(0, 2, 1, 3).type(torch.float)
-    gt_joints_t = torch.from_numpy(gt_joints).reshape(gt_joints.shape[0], gt_joints.shape[1], gt_joints.shape[2], 1).permute(0, 2, 1, 3).type(torch.float)
+    gt_markers_t = torch.from_numpy(gt_markers).reshape(gt_markers.shape[0], gt_markers.shape[1], gt_markers.shape[2], gt_markers.shape[3]).permute(0, 3, 1, 2).type(torch.float)
+    gt_joints_t = torch.from_numpy(gt_joints).reshape(gt_joints.shape[0], gt_joints.shape[1], gt_joints.shape[2], gt_joints.shape[3]).permute(0, 3, 1, 2).type(torch.float)
     # transform vicon
     gt_markers_t = transform_points(gt_markers_t, rotation_gt_inv, translation_gt_inv)
     gt_joints_t = transform_points(gt_joints_t, rotation_gt_inv, translation_gt_inv)       
@@ -140,16 +133,14 @@ def main():
     all_sequence_2d = {}
     all_sequence_3d = {}
     all_sequence_bbox = {}
-    global_sequence_3d = numpy.zeros([h4d_seq.num_of_frames, 33, 3])
+    global_sequence_3d = numpy.zeros([h4d_seq.num_of_frames, gt_joints_t.shape[3], gt_joints_t.shape[2], gt_joints_t.shape[1]])
 
     for view in h4d_seq.camera_ids:  
-        all_sequence_2d[view] = numpy.zeros([h4d_seq.num_of_frames, 33, 2])
-        all_sequence_3d[view] = numpy.zeros([h4d_seq.num_of_frames, 33, 3])
-        all_sequence_bbox[view] = numpy.zeros([h4d_seq.num_of_frames, 4], dtype=numpy.int16)
+        all_sequence_2d[view] = numpy.zeros([h4d_seq.num_of_frames, gt_joints_t.shape[2], gt_joints_t.shape[3], gt_joints_t.shape[1]-1])
+        all_sequence_3d[view] = numpy.zeros([h4d_seq.num_of_frames, gt_joints_t.shape[2], gt_joints_t.shape[3], gt_joints_t.shape[1]])
+        all_sequence_bbox[view] = numpy.zeros([h4d_seq.num_of_frames, gt_joints_t.shape[2], 4], dtype=numpy.int16)
 
     for i in range(h4d_seq.num_of_frames):
-    # for i in range(0, 281):
-        #index = i for h4d_seq.cameras["M72i"][i].groupframe_id == i
         view_id = 0
         markers_2d_obs = {}
         markers2d = {}
@@ -213,177 +204,181 @@ def main():
                     R_rgb, t_rgb)
             
             # projected = project_points_to_uvs(gt_markers_view_aligned / 1000.0, intr)           
-            marker_visibility = numpy.zeros([53], dtype=int)
-            marker_keypoints = numpy.zeros([53, 2], dtype=int)           
+            marker_visibility = numpy.zeros([gt_markers_t.shape[2], gt_markers_t.shape[3]], dtype=int)
+            marker_keypoints = numpy.zeros([gt_markers_t.shape[2], gt_markers_t.shape[3], 2], dtype=int)           
 
-            for j in range(53):
-                if ("INF" in args.sequence_filename):
-                    uv = project_single_point_to_uv(gt_markers_view_aligned[0, :, j, 0], 4 * intr[view])
-                    marker_keypoints[j] = uv
-                else:
-                    uv = project_single_point_to_uv(gt_markers_view_aligned[0, :, j, 0], intr_rgb[view])
-                    marker_keypoints[j] = uv
+            for p in range(gt_markers_t.shape[2]):
+                for j in range(gt_markers_t.shape[3]):
+                    if ("INF" in args.sequence_filename):
+                        uv = project_single_point_to_uv(gt_markers_view_aligned[0, :, p, j], 4 * intr[view])
+                        marker_keypoints[p, j] = uv
+                    else:
+                        uv = project_single_point_to_uv(gt_markers_view_aligned[0, :, p, j], intr_rgb[view])
+                        marker_keypoints[p, j] = uv
 
-                if (args.show_markers): 
-                    if ("INF" in args.sequence_filename):             
-                        depth_diff = numpy.abs(int(depth_t[0, 0, int(uv[1]/4), int(uv[0]/4)]) - gt_markers_view_aligned[0, 2, j, 0])
-                        if (depth_diff < 50):
-                            marker_visibility[j] = 1
+                    if (args.show_markers): 
+                        if ("INF" in args.sequence_filename):             
+                            depth_diff = numpy.abs(int(depth_t[0, 0, int(uv[1]/4), int(uv[0]/4)]) - gt_markers_view_aligned[0, 2, j, p])
+                            if (depth_diff < 50):
+                                marker_visibility[p, j] = 1
+                                img_c = cv2.drawMarker(img_c, 
+                                                    (int(uv[0]), int(uv[1])), 
+                                                    COLORS[format(j+1, '02d')],
+                                                    markerType=cv2.MARKER_CROSS,
+                                                    markerSize=15,
+                                                    thickness=2)
+                            else:
+                                img_c = cv2.drawMarker(img_c, 
+                                                    (int(uv[0]), int(uv[1])), 
+                                                    COLORS[format(j+1, '02d')],
+                                                    markerType=cv2.MARKER_DIAMOND,
+                                                    markerSize=5,
+                                                    thickness=1)
+                        else:
                             img_c = cv2.drawMarker(img_c, 
                                                 (int(uv[0]), int(uv[1])), 
                                                 COLORS[format(j+1, '02d')],
                                                 markerType=cv2.MARKER_CROSS,
                                                 markerSize=15,
                                                 thickness=2)
-                        else:
-                            img_c = cv2.drawMarker(img_c, 
-                                                (int(uv[0]), int(uv[1])), 
-                                                COLORS[format(j+1, '02d')],
-                                                markerType=cv2.MARKER_DIAMOND,
-                                                markerSize=5,
-                                                thickness=1)
+           
+
+            keypoints = numpy.zeros([gt_joints_t.shape[2], gt_joints_t.shape[3], 2], dtype=int)
+            keypoints3d = numpy.zeros([gt_joints_t.shape[2], gt_joints_t.shape[3], 3], dtype=float)
+            for p in range(gt_joints_t.shape[2]):
+                for j in range(gt_joints_t.shape[3]):                
+                    keypoints3d[p, j] = gt_joints_view_aligned[0, :, p, j].cpu().numpy()
+                    if ("INF" in args.sequence_filename):
+                        uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, p, j], 4 * intr[view])
+                        keypoints[p, j] = uv
                     else:
+                        uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, p, j], intr_rgb[view])
+                        keypoints[p, j] = uv
+
+                    print("uv: " + str(uv) + " p: " + str(p) + " j: " + str(j))
+                    if (args.show_joints):
                         img_c = cv2.drawMarker(img_c, 
                                             (int(uv[0]), int(uv[1])), 
                                             COLORS[format(j+1, '02d')],
-                                            markerType=cv2.MARKER_CROSS,
-                                            markerSize=15,
+                                            markerType=cv2.MARKER_STAR,
+                                            markerSize=10,
                                             thickness=2)
-           
-
-            keypoints = numpy.zeros([33, 2], dtype=int)
-            keypoints3d = numpy.zeros([33, 3], dtype=int)
-            for j in range(33):                
-                keypoints3d[j] = gt_joints_view_aligned[0, :, j, 0].cpu().numpy()
-                if ("INF" in args.sequence_filename):
-                    uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, j, 0], 4 * intr[view])
-                    keypoints[j] = uv
-                else:
-                    uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, j, 0], intr_rgb[view])
-                    keypoints[j] = uv
-
-                if (args.show_joints):
-                    img_c = cv2.drawMarker(img_c, 
-                                        (int(uv[0]), int(uv[1])), 
-                                        COLORS[format(j+1, '02d')],
-                                        markerType=cv2.MARKER_STAR,
-                                        markerSize=10,
-                                        thickness=2)
 
             all_sequence_2d[view][i] = keypoints
             all_sequence_3d[view][i] = keypoints3d
 
             # rectangle def and drawing
             p_offset = 20
-            min_x = int(numpy.min(marker_keypoints[:, 0]) - p_offset)
-            min_y = int(numpy.min(marker_keypoints[:, 1]) - p_offset)
-            max_x = int(numpy.max(marker_keypoints[:, 0]) + p_offset)
-            max_y = int(numpy.max(marker_keypoints[:, 1]) + p_offset)
+            for p in range(gt_joints_t.shape[2]):
+                min_x = int(numpy.min(marker_keypoints[p, :, 0]) - p_offset)
+                min_y = int(numpy.min(marker_keypoints[p, :, 1]) - p_offset)
+                max_x = int(numpy.max(marker_keypoints[p, :, 0]) + p_offset)
+                max_y = int(numpy.max(marker_keypoints[p, :, 1]) + p_offset)
+                
+                width = args.resolution[0] * 4 
+                height = args.resolution[1] * 4 
+                all_sequence_bbox[view][i, p, 0] = min_x if min_x >= 0 else 0 
+                all_sequence_bbox[view][i, p, 1] = min_y if min_y >= 0 else 0 
+                all_sequence_bbox[view][i, p, 2] = max_x if max_x <= width - 1 else width - 1
+                all_sequence_bbox[view][i, p, 3] = max_y if max_y <= height - 1 else height - 1 
+
+                cv2.rectangle(img_c, (all_sequence_bbox[view][i, p, 0], all_sequence_bbox[view][i, p, 1]), \
+                    (all_sequence_bbox[view][i, p, 2], all_sequence_bbox[view][i, p, 3]), (250, 100, 100), thickness=2)
+
+                if (args.show_joints):
+                    draw_skeleton_joints(img_c, keypoints[p], COLORS)                
+
+                if (i in args.frames2save):
+                    cv2.imwrite(os.path.join(args.sequence_path, "{}_{}.png".format(str(i), view)), \
+                        img_c)
+            ########## marker matching ###################
+            if (False):
+                gray_img = cv2.cvtColor(h4d_seq.cameras[view][i].color_img, cv2.COLOR_BGR2GRAY)
             
-            width = args.resolution[0] * 4 
-            height = args.resolution[1] * 4 
-            all_sequence_bbox[view][i][0] = min_x if min_x >= 0 else 0 
-            all_sequence_bbox[view][i][1] = min_y if min_y >= 0 else 0 
-            all_sequence_bbox[view][i][2] = max_x if max_x <= width - 1 else width - 1
-            all_sequence_bbox[view][i][3] = max_y if max_y <= height - 1 else height - 1 
+                _, mask_img = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY)
+                
+                # cv2.imshow("gray", mask_img)
+                # cv2.waitKey(0)
 
-            cv2.rectangle(img_c, (all_sequence_bbox[view][i][0], all_sequence_bbox[view][i][1]), \
-                (all_sequence_bbox[view][i][2], all_sequence_bbox[view][i][3]), (250, 100, 100), thickness=2)
+                contours = cv2.findContours(mask_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-            if (args.show_joints):
-                draw_skeleton_joints(img_c, keypoints, COLORS)
+                contours_area = []
+                markers2d[view] = []
+                markers2d_of_camera[view] = []
+                markers2d_of_vicon[view] = []
+                markers_2d_obs[view] = []
+                markers_con2d[view] = []
+                markers3d[view] = []
+                # calculate area and filter into new array
+                for con in contours[0]:
+                    area = cv2.contourArea(con)
+                    if 5 < area < 150:
+                        contours_area.append(con)
+
+                # check if contour is of circular shape
+                for con in contours_area:
+                    perimeter = cv2.arcLength(con, True)
+                    area = cv2.contourArea(con)
+                    if perimeter == 0:
+                        break
+                    circularity = 4*math.pi*(area/(perimeter*perimeter))
+                    # print (circularity)
+                    if 0.5 < circularity < 1.5:                        
+                        markers_con2d[view].append(con)               
+
+                
+                h, w = h4d_seq.cameras[view][i].depth_img.shape
+                            
+                for marker in markers_con2d[view]:
+                    # compute the center of the contour
+                    M = cv2.moments(marker)
+                    cX = int(M["m10"] / M["m00"] / 4)
+                    cY = int(M["m01"] / M["m00"] / 4)
                 
 
-            if (i in args.frames2save):
-                cv2.imwrite(os.path.join(args.sequence_path, "{}_{}.png".format(str(i), view)), \
-                    img_c)
-            ########## marker matching ###################
-            gray_img = cv2.cvtColor(h4d_seq.cameras[view][i].color_img, cv2.COLOR_BGR2GRAY)
-           
-            _, mask_img = cv2.threshold(gray_img, 150, 255, cv2.THRESH_BINARY)
-            
-            # cv2.imshow("gray", mask_img)
-            # cv2.waitKey(0)
-
-            contours = cv2.findContours(mask_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-            contours_area = []
-            markers2d[view] = []
-            markers2d_of_camera[view] = []
-            markers2d_of_vicon[view] = []
-            markers_2d_obs[view] = []
-            markers_con2d[view] = []
-            markers3d[view] = []
-            # calculate area and filter into new array
-            for con in contours[0]:
-                area = cv2.contourArea(con)
-                if 5 < area < 150:
-                    contours_area.append(con)
-
-            # check if contour is of circular shape
-            for con in contours_area:
-                perimeter = cv2.arcLength(con, True)
-                area = cv2.contourArea(con)
-                if perimeter == 0:
-                    break
-                circularity = 4*math.pi*(area/(perimeter*perimeter))
-                # print (circularity)
-                if 0.5 < circularity < 1.5:                        
-                    markers_con2d[view].append(con)               
-
-            
-            h, w = h4d_seq.cameras[view][i].depth_img.shape
+                    if (cY > 0.0 * h and cY < 1.0 * h and \
+                        cX > 0.0 * w and cX < 1.0 * w and \
+                        points_3d[cY, cX][2].cpu().numpy() > 300 and \
+                        points_3d[cY, cX][2].cpu().numpy() < 2900):
+                        markers2d[view].append((4 * cX, 4 * cY))  
+                        markers3d[view].append(points_3d_t[cY, cX].cpu().numpy())
+                
+                gt_markers_t_temp = gt_markers_t.clone().squeeze()[gt_index].cpu().numpy()
+                
+                bip_graph = nx.Graph()
+                for x in range(gt_markers_t_temp.shape[1]):
+                    bip_graph.add_node(format(x, "05d"), bipartite=0)
+                    for y in range(len(markers3d[view])):
+                        bip_graph.add_node(format(y, "03d"), bipartite=1)
                         
-            for marker in markers_con2d[view]:
-                # compute the center of the contour
-                M = cv2.moments(marker)
-                cX = int(M["m10"] / M["m00"] / 4)
-                cY = int(M["m01"] / M["m00"] / 4)
-            
+                
+                for x in range(gt_markers_t_temp.shape[1]):
+                    for y in range(len(markers3d[view])):
+                        cost = numpy.linalg.norm(gt_markers_t_temp[:, x] - markers3d[view][y])
+                        if (cost < 500):
+                            bip_graph.add_edge(format(x, "05d"), format(y, "03d"), weight = cost)
+                        else:
+                            bip_graph.add_edge(format(x, "05d"), format(y, "03d"), weight = 10000)
 
-                if (cY > 0.0 * h and cY < 1.0 * h and \
-                    cX > 0.0 * w and cX < 1.0 * w and \
-                    points_3d[cY, cX][2].cpu().numpy() > 300 and \
-                    points_3d[cY, cX][2].cpu().numpy() < 2900):
-                    markers2d[view].append((4 * cX, 4 * cY))  
-                    markers3d[view].append(points_3d_t[cY, cX].cpu().numpy())
-            
-            gt_markers_t_temp = gt_markers_t.clone().squeeze()[gt_index].cpu().numpy()
-            
-            bip_graph = nx.Graph()
-            for x in range(gt_markers_t_temp.shape[1]):
-                bip_graph.add_node(format(x, "05d"), bipartite=0)
-                for y in range(len(markers3d[view])):
-                    bip_graph.add_node(format(y, "03d"), bipartite=1)
-                    
-            
-            for x in range(gt_markers_t_temp.shape[1]):
-                for y in range(len(markers3d[view])):
-                    cost = numpy.linalg.norm(gt_markers_t_temp[:, x] - markers3d[view][y])
-                    if (cost < 500):
-                        bip_graph.add_edge(format(x, "05d"), format(y, "03d"), weight = cost)
-                    else:
-                        bip_graph.add_edge(format(x, "05d"), format(y, "03d"), weight = 10000)
+                matches = nx.algorithms.bipartite.minimum_weight_full_matching(bip_graph)
 
-            matches = nx.algorithms.bipartite.minimum_weight_full_matching(bip_graph)
-
-            vicon_id = 0
-            for match_id in matches:
-                if (len(match_id) == 5):
-                    print(match_id + " " + matches[match_id] + ": " + str(bip_graph[match_id][matches[match_id]]['weight']))
-                    rs_id = int(matches[match_id])                    
-                    
-                    if (bip_graph[match_id][matches[match_id]]['weight'] < 50):
-                        markers_2d_obs[view].append(int(match_id))
-
-                        markers2d_of_camera[view].append(markers2d[view][rs_id])
-                        markers2d_of_vicon[view].append((int(marker_keypoints[int(match_id)][0]), int(marker_keypoints[int(match_id)][1])))
+                vicon_id = 0
+                for match_id in matches:
+                    if (len(match_id) == 5):
+                        print(match_id + " " + matches[match_id] + ": " + str(bip_graph[match_id][matches[match_id]]['weight']))
+                        rs_id = int(matches[match_id])                    
                         
-                        # cv2.line(img_c, 
-                        #             markers2d[view][rs_id], 
-                        #             (int(marker_keypoints[int(match_id)][0]), int(marker_keypoints[int(match_id)][1])), 
-                        #             COLORS["{:02d}".format(int(match_id) + 1)], 3)
-                    vicon_id += 1
+                        if (bip_graph[match_id][matches[match_id]]['weight'] < 50):
+                            markers_2d_obs[view].append(int(match_id))
+
+                            markers2d_of_camera[view].append(markers2d[view][rs_id])
+                            markers2d_of_vicon[view].append((int(marker_keypoints[int(match_id)][0]), int(marker_keypoints[int(match_id)][1])))
+                            
+                            # cv2.line(img_c, 
+                            #             markers2d[view][rs_id], 
+                            #             (int(marker_keypoints[int(match_id)][0]), int(marker_keypoints[int(match_id)][1])), 
+                            #             COLORS["{:02d}".format(int(match_id) + 1)], 3)
+                        vicon_id += 1
 
             cv2.imshow("color_" + view, cv2.transpose(img_c))
             view_id += 1
@@ -392,10 +387,10 @@ def main():
 
        
 
-        gt_joints_t_temp = gt_joints_t.clone().squeeze()[gt_index].cpu().numpy()
+        gt_joints_t_temp = gt_joints_t.clone()[gt_index].cpu().numpy()
         # numpy.save(os.path.join(args.sequence_path, "Dump", "gposes3d", str(i) + ".npy"), gt_joints_t_temp.transpose())
 
-        global_sequence_3d[i] = gt_joints_t_temp.transpose().copy()
+        global_sequence_3d[i] = numpy.transpose(gt_joints_t_temp, (2, 1, 0)).copy()
 
        
         # if (len(numpy.unique(pindices)) == 53):

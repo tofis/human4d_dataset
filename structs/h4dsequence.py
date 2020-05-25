@@ -41,7 +41,8 @@ class H4DSequence:
         sort_nicely(depth_images)
         sort_nicely(timestamps)
 
-        for i in range (len(color_images)):
+        # for i in range (len(color_images)):
+        for i in range (100):
             groupframe_id, cam, _, frame_id = color_images[i].split('_')
             frame_id = frame_id.split('.')[0]
 

@@ -20,7 +20,9 @@ retval = {
     'subject_names': ['S3'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
     'camera_names': ['M72e', 'M72h', 'M72i', 'M72j'],
     'action_names': [
-        'running'
+        # 'running'
+        'talking'
+
     ]
         # 'Discussion-1', 'Discussion-2',
         # 'Eating-1', 'Eating-2',
@@ -57,10 +59,10 @@ table_dtype = np.dtype([
 retval['table'] = []
 
 # h36m_root = sys.argv[1]
-h36m_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings"
+h36m_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/experimentation_dataset"
 
 # destination_file_path = os.path.join(h36m_root, "extra", f"human36m-multiview-labels-{BBOXES_SOURCE}bboxes.npy")
-destination_file_path = os.path.join("E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings", f"human4d-multiview-labels-{BBOXES_SOURCE}bboxes.npy")
+destination_file_path = os.path.join(h36m_root, f"human4d-multiview-labels-{BBOXES_SOURCE}bboxes.npy")
 # destination_file_path = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/BBs/bboxes-H4D-GT.npy"
 
 # una_dinosauria_root = sys.argv[2] 
@@ -98,8 +100,10 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         #     return ''.join(chr(int(x[0])) for x in array)
         # assert camera_array_to_name(camera_params['Name']) == camera
 
-        camera_retval['R'] = torch.inverse(rotation).cpu().numpy()
-        camera_retval['t'] = (-torch.inverse(rotation) @ translation).cpu().numpy()
+        # camera_retval['R'] = torch.inverse(rotation).cpu().numpy()
+        # camera_retval['t'] = (-torch.inverse(rotation) @ translation).cpu().numpy()
+        camera_retval['R'] = rotation.cpu().numpy()
+        camera_retval['t'] = translation.cpu().numpy()
 
         camera_retval['K'] = intr.cpu().numpy()
         # camera_retval['K'][:2, 2] = camera_params['c'][:, 0]
@@ -217,7 +221,7 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         #                             '%s.h5' % action_to_una_dinosauria[subject].get(action, action.replace('-', ' '))), 'r') as poses_file:
         # poses_world = np.array(poses_file['3D_positions']).T.reshape(-1, 32, 3)[frame_idxs][:, valid_joints]
         # poses_world = numpy.load(os.path.join(subject_path, action, subject + "_" + action + "_" + camera + "_3d.npy"))[frame_idxs][:, valid_joints]
-        poses_world = numpy.load(os.path.join(subject_path, action, subject + "_" + action + "_global_3d.npy"))[frame_idxs][:, valid_joints]
+        poses_world = numpy.load(os.path.join(subject_path, action, subject + "_" + action + "_global_3d.npy"))[frame_idxs][:, 0, valid_joints] # 0 in dim 1 for person_id
 
         table_segment = np.empty(len(frame_idxs), dtype=table_dtype)
         table_segment['subject_idx'] = subject_idx
