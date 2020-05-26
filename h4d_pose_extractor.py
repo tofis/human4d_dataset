@@ -57,14 +57,17 @@ def main():
         "--sequence_path",
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/19-07-12-10-12-49",      
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-01-38",      
-        default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",      
+        # default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",
+        # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-09-52-53",
+        default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-09-55-48",
         help="path to sequence files",
     )
     parser.add_argument(
         "--sequence_filename", 
         # default="RGB_Talking_S3_01",
         # default="INF_Running_S3_01_eval",
-        default="RGB_WatchingFootball_S1S2_02_eval",      
+        # default="RGB_WatchingFootball_S1S2_02_eval",      
+        default="RGB_PushingKicking_S3_01",      
         help="path to sequence files",
     )
     parser.add_argument(
@@ -91,15 +94,15 @@ def main():
     device_repo_rgb = load_intrinsics_repository(os.path.join(device_repo_path), stream='RGB')
     device_repo_RT = load_rotation_translation(os.path.join(device_repo_path))
    
-    extr_files = [current_ for current_ in os.listdir(os.path.join(args.sequence_path, "../poses")) if ".extrinsics" in current_]
+    extr_files = [current_ for current_ in os.listdir(os.path.join(args.sequence_path, "../pose")) if ".extrinsics" in current_]
 
     extrinsics = {}
     paths = {}
     views = []
 
     for extr in extr_files:
-        extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(args.sequence_path, "../poses", extr))[0]
-        paths[extr.split(".")[0]] = os.path.join(args.sequence_path, "../poses", extr.split(".")[0])
+        extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(args.sequence_path, "../pose", extr))[0]
+        paths[extr.split(".")[0]] = os.path.join(args.sequence_path, "../pose", extr.split(".")[0])
         views.append(extr.split(".")[0])
 
     gt_joints = load_joints_seq(os.path.join(args.sequence_path, args.sequence_filename + ".joints"))
@@ -123,12 +126,10 @@ def main():
     gt_joints_t = torch.from_numpy(gt_joints).reshape(gt_joints.shape[0], gt_joints.shape[1], gt_joints.shape[2], gt_joints.shape[3]).permute(0, 3, 1, 2).type(torch.float)
     # transform vicon
     gt_markers_t = transform_points(gt_markers_t, rotation_gt_inv, translation_gt_inv)
-    gt_joints_t = transform_points(gt_joints_t, rotation_gt_inv, translation_gt_inv)       
+    gt_joints_t = transform_points(gt_joints_t, rotation_gt_inv, translation_gt_inv)
 
-
-
-
-    h4d_seq = H4DSequence(os.path.join(args.sequence_path, "Dump"), ["M72e", "M72h", "M72i", "M72j"])
+    rgbd_skip = load_rgbd_skip(os.path.join(args.sequence_path, "../offsets.txt"), os.path.basename(args.sequence_path))
+    h4d_seq = H4DSequence(os.path.join(args.sequence_path, "Dump"), ["M72e", "M72h", "M72i", "M72j"], skip=rgbd_skip)
    
     all_sequence_2d = {}
     all_sequence_3d = {}
@@ -388,7 +389,10 @@ def main():
        
 
         gt_joints_t_temp = gt_joints_t.clone()[gt_index].cpu().numpy()
-        # numpy.save(os.path.join(args.sequence_path, "Dump", "gposes3d", str(i) + ".npy"), gt_joints_t_temp.transpose())
+
+        if (not os.path.exists(os.path.join(args.sequence_path, "Dump", "gposes3d"))):
+            os.makedirs(os.path.join(args.sequence_path, "Dump", "gposes3d"))
+        numpy.save(os.path.join(args.sequence_path, "Dump", "gposes3d", str(i) + ".npy"), numpy.transpose(gt_joints_t_temp, (1, 2, 0)))
 
         global_sequence_3d[i] = numpy.transpose(gt_joints_t_temp, (2, 1, 0)).copy()
 

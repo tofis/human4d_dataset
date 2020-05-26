@@ -24,7 +24,7 @@ def sort_nicely(l):
     l.sort(key=alphanum_key)
 
 class H4DSequence:
-    def __init__(self, sequence_path, camera_ids):
+    def __init__(self, sequence_path, camera_ids, skip=20):
         self.camera_ids = camera_ids
         self.cameras = {}
         self.init_groupframe_id = -1
@@ -41,8 +41,10 @@ class H4DSequence:
         sort_nicely(depth_images)
         sort_nicely(timestamps)
 
-        # for i in range (len(color_images)):
-        for i in range (100):
+        skip *= len(camera_ids)
+
+        for i in range (skip, len(color_images)):
+        # for i in range (100):
             groupframe_id, cam, _, frame_id = color_images[i].split('_')
             frame_id = frame_id.split('.')[0]
 
