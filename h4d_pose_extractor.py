@@ -59,7 +59,7 @@ def main():
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-01-38",      
         # default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-09-52-53",
-        default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-09-55-48",
+        default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-07-39",
         help="path to sequence files",
     )
     parser.add_argument(
@@ -67,7 +67,7 @@ def main():
         # default="RGB_Talking_S3_01",
         # default="INF_Running_S3_01_eval",
         # default="RGB_WatchingFootball_S1S2_02_eval",      
-        default="RGB_PushingKicking_S3_01",      
+        default="RGB_InflightSafety_S3_01",      
         help="path to sequence files",
     )
     parser.add_argument(
