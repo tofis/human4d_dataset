@@ -59,7 +59,8 @@ def main():
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-01-38",      
         # default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-09-52-53",
-        default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-07-39",
+        # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-07-39",
+        default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-12-28",
         help="path to sequence files",
     )
     parser.add_argument(
@@ -67,7 +68,7 @@ def main():
         # default="RGB_Talking_S3_01",
         # default="INF_Running_S3_01_eval",
         # default="RGB_WatchingFootball_S1S2_02_eval",      
-        default="RGB_InflightSafety_S3_01",      
+        default="INF_Running_S1_01",      
         help="path to sequence files",
     )
     parser.add_argument(
@@ -218,23 +219,24 @@ def main():
                         marker_keypoints[p, j] = uv
 
                     if (args.show_markers): 
-                        if ("INF" in args.sequence_filename):             
-                            depth_diff = numpy.abs(int(depth_t[0, 0, int(uv[1]/4), int(uv[0]/4)]) - gt_markers_view_aligned[0, 2, j, p])
-                            if (depth_diff < 50):
-                                marker_visibility[p, j] = 1
-                                img_c = cv2.drawMarker(img_c, 
-                                                    (int(uv[0]), int(uv[1])), 
-                                                    COLORS[format(j+1, '02d')],
-                                                    markerType=cv2.MARKER_CROSS,
-                                                    markerSize=15,
-                                                    thickness=2)
-                            else:
-                                img_c = cv2.drawMarker(img_c, 
-                                                    (int(uv[0]), int(uv[1])), 
-                                                    COLORS[format(j+1, '02d')],
-                                                    markerType=cv2.MARKER_DIAMOND,
-                                                    markerSize=5,
-                                                    thickness=1)
+                        if ("INF" in args.sequence_filename):      
+                            if (uv[0]/4 < args.resolution[0] and uv[1]/4 < args.resolution[1]):      
+                                depth_diff = numpy.abs(int(depth_t[0, 0, int(uv[1]/4), int(uv[0]/4)]) - gt_markers_view_aligned[0, 2, p, j])                            
+                                if (depth_diff < 50):
+                                    marker_visibility[p, j] = 1
+                                    img_c = cv2.drawMarker(img_c, 
+                                                        (int(uv[0]), int(uv[1])), 
+                                                        COLORS[format(j+1, '02d')],
+                                                        markerType=cv2.MARKER_CROSS,
+                                                        markerSize=15,
+                                                        thickness=2)
+                                else:
+                                    img_c = cv2.drawMarker(img_c, 
+                                                        (int(uv[0]), int(uv[1])), 
+                                                        COLORS[format(j+1, '02d')],
+                                                        markerType=cv2.MARKER_DIAMOND,
+                                                        markerSize=5,
+                                                        thickness=1)
                         else:
                             img_c = cv2.drawMarker(img_c, 
                                                 (int(uv[0]), int(uv[1])), 
