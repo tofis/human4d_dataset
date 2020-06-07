@@ -33,17 +33,21 @@ def load_markers_seq(filename, scale=10, markers_num=53):
     if (len(lines) > markers_num):
         number_of_people = 1 if lines[0].split(" ")[1] == lines[markers_num].split(" ")[1] else 2
     number_of_frames = len(lines) // (markers_num * number_of_people)
-    markers = numpy.zeros([number_of_frames, number_of_people, markers_num, 3], dtype=float)
+    extension = 0 if clap_id > -1 else abs(clap_id)
+    markers = numpy.zeros([number_of_frames + extension, number_of_people, markers_num, 3], dtype=float)
     for i in range(len(lines)):
         f = i // (markers_num * number_of_people)
         p = (i % (markers_num * number_of_people)) // markers_num
         m = i % markers_num              
         values = lines[i].split(" ")
-        markers[f, p, m, 0] = float(values[2])
-        markers[f, p, m, 1] = float(values[4])
-        markers[f, p, m, 2] = float(values[3])
+        markers[extension + f, p, m, 0] = float(values[2])
+        markers[extension + f, p, m, 1] = float(values[4])
+        markers[extension + f, p, m, 2] = float(values[3])
 
-    return markers[clap_id:, :, :, :] * scale
+    if (extension > 0):
+        return markers * scale
+    else:
+        return markers[clap_id:, :, :, :] * scale
 
 def load_joints_seq(filename, scale=10, joints_num=33):
     f_clap = open(filename.replace(".joints", ".clap"), "r")
@@ -54,14 +58,19 @@ def load_joints_seq(filename, scale=10, joints_num=33):
     if (len(lines) > joints_num):
         number_of_people = 1 if lines[0].split(" ")[1] == lines[joints_num].split(" ")[1] else 2
     number_of_frames = len(lines) // (joints_num * number_of_people)
-    joints = numpy.zeros([number_of_frames, number_of_people, joints_num, 3], dtype=float)
+    extension = 0 if clap_id > -1 else abs(clap_id)
+    joints = numpy.zeros([number_of_frames + extension, number_of_people, joints_num, 3], dtype=float)
     for i in range(len(lines)):
         f = i // (joints_num * number_of_people)
         p = (i % (joints_num * number_of_people)) // joints_num
         j = i % joints_num        
         values = lines[i].split(" ")
-        joints[f, p, j, 0] = float(values[2])
-        joints[f, p, j, 1] = float(values[4])
-        joints[f, p, j, 2] = float(values[3])
+        joints[extension + f, p, j, 0] = float(values[2])
+        joints[extension + f, p, j, 1] = float(values[4])
+        joints[extension + f, p, j, 2] = float(values[3])
 
-    return joints[clap_id:, :, :, :] * scale
+    if (extension > 0):
+        return joints * scale
+    else:
+        return joints[clap_id:, :, :, :] * scale
+

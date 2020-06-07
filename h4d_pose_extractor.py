@@ -35,7 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch Show Pose and Pointcloud")
     parser.add_argument(
         "--show_markers",
-        default=True,      
+        default=False,      
         help="render marker positions",
     )
     parser.add_argument(
@@ -54,13 +54,18 @@ def main():
         help="Visualize 3d points",
     )
     parser.add_argument(
+        "--test_mode",
+        default=False
+    )
+    parser.add_argument(
         "--sequence_path",
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/19-07-12-10-12-49",      
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-01-38",      
         # default="G:/MULTI4D_Dataset/multi/rgbd_subjects1and2/19-07-12-13-05-08",
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-09-52-53",
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-07-39",
-        default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-12-28",
+        # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-12-28",
+        default="G:/MULTI4D_Dataset/HUMAN4D/S4/19-07-12-12-05-24",
         help="path to sequence files",
     )
     parser.add_argument(
@@ -68,7 +73,8 @@ def main():
         # default="RGB_Talking_S3_01",
         # default="INF_Running_S3_01_eval",
         # default="RGB_WatchingFootball_S1S2_02_eval",      
-        default="INF_Running_S1_01",      
+        # default="INF_Running_S1_01",      
+        default="RGB_InflightSafety_S4_03",      
         help="path to sequence files",
     )
     parser.add_argument(
@@ -80,7 +86,7 @@ def main():
     parser.add_argument(
         "--frames2save",     
         nargs="*", type=int, 
-        default = [20, 200, 324],
+        default = [20, 200, 280, 324, 400],
         help="frame ids to be saved in .png",
     )
 
@@ -130,7 +136,7 @@ def main():
     gt_joints_t = transform_points(gt_joints_t, rotation_gt_inv, translation_gt_inv)
 
     rgbd_skip = load_rgbd_skip(os.path.join(args.sequence_path, "../offsets.txt"), os.path.basename(args.sequence_path))
-    h4d_seq = H4DSequence(os.path.join(args.sequence_path, "Dump"), ["M72e", "M72h", "M72i", "M72j"], skip=rgbd_skip)
+    h4d_seq = H4DSequence(os.path.join(args.sequence_path, "Dump"), ["M72e", "M72h", "M72i", "M72j"], skip=rgbd_skip, test_mode=args.test_mode)
    
     all_sequence_2d = {}
     all_sequence_3d = {}

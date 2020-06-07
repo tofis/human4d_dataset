@@ -5,7 +5,7 @@ from importers import *
 from utils import *
 
 class H4DSequence:
-    def __init__(self, sequence_path, camera_ids, skip=20):
+    def __init__(self, sequence_path, camera_ids, skip=20, test_mode=False):
         self.camera_ids = camera_ids
         self.cameras = {}
         self.init_groupframe_id = -1
@@ -24,7 +24,11 @@ class H4DSequence:
 
         skip *= len(camera_ids)
 
-        for i in range (skip, len(color_images)):
+        if (not test_mode):
+            all_frames = len(color_images)
+        else:
+            all_frames = 800
+        for i in range (skip, all_frames):
         # for i in range (100):
             groupframe_id, cam, _, frame_id = color_images[i].split('_')
             frame_id = frame_id.split('.')[0]
