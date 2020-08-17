@@ -11,11 +11,24 @@ import numpy
 import h5py
 
 # dataset_root = sys.argv[1]
-dataset_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data"
-data_path = os.path.join(dataset_root, "Recordings/experimentation_dataset")
-subjects = [x for x in os.listdir(data_path) if x.startswith('S')]
+# dataset_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data"
+# data_path = os.path.join(dataset_root, "Recordings/experimentation_dataset")
+
+data_path = 'G:/MULTI4D_Dataset/HUMAN4D'
+# subjects = [x for x in os.listdir(data_path) if x.startswith('S')]
+subjects = ['S1', 'S2', 'S3', 'S4']
+
+with open(os.path.join(data_path, 'metadata_single.txt')) as metadata_file:
+    lines = metadata_file.readlines()
+    metadata = {}
+    for s in subjects:
+        metadata[s] = {}
+
+    for line in lines:
+        values = line.split('\t')
+        metadata[values[0]][values[1]] = values[2].strip()
 # assert len(subjects) == 7
-assert len(subjects) == 1
+assert len(subjects) == 4
 
 destination_dir = os.path.join(data_path, "BBs")
 os.makedirs(destination_dir, exist_ok=True)
@@ -31,7 +44,9 @@ bboxes_retval = nesteddict()
 
 def load_bboxes(data_path, subject, action, camera):
     print(subject, action, camera)
-
+    
+    if ('!' in metadata[subject][action]):
+        return
     # def mask_to_bbox(mask):
     #     h_mask = mask.max(0)
     #     w_mask = mask.max(1)
@@ -51,11 +66,23 @@ def load_bboxes(data_path, subject, action, camera):
         #     corrected_action = action.replace('-', ' ')
 
         # TODO use pathlib
+        # bboxes_path = os.path.join(
+        #     data_path,
+        #     subject,
+        #     metadata[subject][action],
+        #     '%s_%s_%s_bbox.npy' % (subject, action, camera))
+        folder_files = [_file for _file in os.listdir(os.path.join(
+            data_path,
+            subject,
+            metadata[subject][action]))
+            if 'bbox' in _file and camera in _file]
+        bbfile = folder_files[0]
+
         bboxes_path = os.path.join(
             data_path,
             subject,
-            action,
-            '%s_%s_%s_bbox.npy' % (subject, action, camera))
+            metadata[subject][action],
+            bbfile)
 
         retval = numpy.load(bboxes_path)
         retval = retval[:, 0, :] # TODO: person id
@@ -97,7 +124,20 @@ if __name__ == '__main__':
     for subject in subjects:
         subject_path = os.path.join(data_path, subject)
         # actions = [action for action in os.listdir(subject_path) if "." not in action]
-        actions = ['talking']
+        actions = [ 'running',
+        'junping_jack',
+        'bending',
+        'punching_n_kicking',
+        'basketball_dribbling',
+        'laying_down',
+        'sitting_down',
+        'sitting_on_a_chair',
+        'talking',
+        'object_dropping_n_picking',
+        'stretching_n_talking',
+        'talking_n_walking',
+        'watching_scary_movie',
+        'in-flight_safety_announcement']
         try:
             actions.remove('MySegmentsMat') # folder with bbox *.mat files
         except ValueError:
@@ -105,7 +145,8 @@ if __name__ == '__main__':
 
         for action in actions:
             cameras = 'M72e', 'M72h', 'M72i', 'M72j'
-
+            if action not in metadata[subject].keys():
+                continue
             for camera in cameras:
                 async_result = pool.apply_async(
                     load_bboxes,

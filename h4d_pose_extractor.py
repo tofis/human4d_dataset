@@ -65,7 +65,7 @@ def main():
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-09-52-53",
         # default="G:/MULTI4D_Dataset/core/Subject3/19-07-12-10-07-39",
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-12-28",
-        default="G:/MULTI4D_Dataset/HUMAN4D/S4/19-07-12-12-05-24",
+        default="G:/MULTI4D_Dataset/HUMAN4D/S3/19-07-12-10-01-38",
         help="path to sequence files",
     )
     parser.add_argument(
@@ -74,7 +74,7 @@ def main():
         # default="INF_Running_S3_01_eval",
         # default="RGB_WatchingFootball_S1S2_02_eval",      
         # default="INF_Running_S1_01",      
-        default="RGB_InflightSafety_S4_03",      
+        default="RGB_Talking_S3_01",      
         help="path to sequence files",
     )
     parser.add_argument(

@@ -15,14 +15,28 @@ from vision import *
 
 # Change this line if you want to use Mask-RCNN or SSD bounding boxes instead of H36M's "ground truth".
 BBOXES_SOURCE = 'GT' # or 'MRCNN' or 'SSD'
+h36m_root = "G:/MULTI4D_Dataset/HUMAN4D"
 
+
+        
 retval = {
-    'subject_names': ['S3'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
+    'subject_names': ['S1', 'S2', 'S3', 'S4'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
     'camera_names': ['M72e', 'M72h', 'M72i', 'M72j'],
     'action_names': [
-        # 'running'
-        'talking'
-
+        'running',
+        'junping_jack',
+        'bending',
+        'punching_n_kicking',
+        'basketball_dribbling',
+        'laying_down',
+        'sitting_down',
+        'sitting_on_a_chair',
+        'talking',
+        'object_dropping_n_picking',
+        'stretching_n_talking',
+        'talking_n_walking',
+        'watching_scary_movie',
+        'in-flight_safety_announcement'
     ]
         # 'Discussion-1', 'Discussion-2',
         # 'Eating-1', 'Eating-2',
@@ -39,6 +53,17 @@ retval = {
         # 'WalkingDog-1', 'WalkingDog-2',
         # 'WalkingTogether-1', 'WalkingTogether-2']
 }
+
+with open(os.path.join(h36m_root, 'metadata_single.txt')) as metadata_file:
+    lines = metadata_file.readlines()
+    metadata = {}
+    for s in retval['subject_names']:
+        metadata[s] = {}
+
+    for line in lines:
+        values = line.split('\t')
+        metadata[values[0]][values[1]] = values[2].strip()
+
 retval['cameras'] = np.empty(
     (len(retval['subject_names']), len(retval['camera_names'])),
     dtype=[
@@ -59,15 +84,14 @@ table_dtype = np.dtype([
 retval['table'] = []
 
 # h36m_root = sys.argv[1]
-h36m_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/experimentation_dataset"
 
 # destination_file_path = os.path.join(h36m_root, "extra", f"human36m-multiview-labels-{BBOXES_SOURCE}bboxes.npy")
 destination_file_path = os.path.join(h36m_root, f"human4d-multiview-labels-{BBOXES_SOURCE}bboxes.npy")
 # destination_file_path = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/BBs/bboxes-H4D-GT.npy"
 
 # una_dinosauria_root = sys.argv[2] 
-una_dinosauria_root = "E:/VCL/Users/tofis/Data/DATASETS/h36m-fetch/extra/una-dinosauria-data/h36m"
-cameras_params = h5py.File(os.path.join(una_dinosauria_root, 'cameras.h5'), 'r')
+# una_dinosauria_root = "E:/VCL/Users/tofis/Data/DATASETS/h36m-fetch/extra/una-dinosauria-data/h36m"
+# cameras_params = h5py.File(os.path.join(una_dinosauria_root, 'cameras.h5'), 'r')
 
 # Fill retval['cameras']
 for subject_idx, subject in enumerate(retval['subject_names']):
@@ -81,14 +105,14 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         camera_int = intr.cpu().numpy()
         camera_int_univ = intr.cpu().numpy()
 
-        extr_files = [current_ for current_ in os.listdir(os.path.join(h36m_root, subject)) if ".extrinsics" in current_]
+        extr_files = [current_ for current_ in os.listdir(os.path.join(h36m_root, subject, 'pose')) if ".extrinsics" in current_]
 
         extrinsics = {}
         paths = {}
         views = []
 
         for extr in extr_files:
-            extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(h36m_root, subject, extr))[0]
+            extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(h36m_root, subject, 'pose', extr))[0]
             # paths[extr.split(".")[0]] = os.path.join(args.sequence_path, extr.split(".")[0])
             views.append(extr.split(".")[0])
         rotation, translation = extract_rotation_translation(extrinsics[camera].unsqueeze(0))
@@ -120,7 +144,9 @@ for subject_idx, subject in enumerate(retval['subject_names']):
 
 # Fill bounding boxes
 # bboxes = np.load(sys.argv[3], allow_pickle=True).item()
-bboxes = np.load("E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/BBs/bboxes-H4D-GT.npy", allow_pickle=True).item()
+
+npy_bb = os.path.join(h36m_root, 'BBs', 'bboxes-H4D-GT.npy')
+bboxes = np.load(npy_bb, allow_pickle=True).item()
 
 def square_the_bbox(bbox):
     top, left, bottom, right = bbox
@@ -191,7 +217,7 @@ if BBOXES_SOURCE is not 'GT':
 # fill retval['table']
 # from action_to_una_dinosauria import action_to_una_dinosauria
 
-for subject_idx, subject in enumerate(retval['subject_names']):
+for subject_idx, subject in enumerate(retval['subject_names']):    
     subject_path = os.path.join(h36m_root, subject)
     actions = os.listdir(subject_path)
     try:
@@ -200,15 +226,30 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         pass
 
     for action_idx, action in enumerate(retval['action_names']):
-        action_path = os.path.join(subject_path, action, 'imageSequence')
+        if action not in metadata[subject].keys():
+            continue
+
+        rgbd_skip = load_rgbd_skip(os.path.join(subject_path, "offsets.txt"), metadata[subject][action])
+
+        action_path = os.path.join(subject_path, metadata[subject][action], 'Dump', 'color')
         if not os.path.isdir(action_path):
             raise FileNotFoundError(action_path)
 
         for camera_idx, camera in enumerate(retval['camera_names']):
-            camera_path = os.path.join(action_path, camera)
-            if os.path.isdir(camera_path):
+            # camera_path = os.path.join(action_path, camera)
+            # if os.path.isdir(camera_path):
+            #     # frame_idxs = sorted([int(name.split('_')[0]) for name in os.listdir(camera_path)])
+            #     frame_idxs = sorted([int(name.split('.')[0]) for name in os.listdir(camera_path)])
+            #     assert len(frame_idxs) > 15, 'Too few frames in %s' % camera_path # otherwise WTF
+            #     break
+            
+            if os.path.isdir(action_path):
                 # frame_idxs = sorted([int(name.split('_')[0]) for name in os.listdir(camera_path)])
-                frame_idxs = sorted([int(name.split('.')[0]) for name in os.listdir(camera_path)])
+                if rgbd_skip > 0:
+                    frame_idxs = sorted([int(name.split('.')[0].split('_')[0]) for name in os.listdir(action_path) if camera in name])[:-rgbd_skip]
+                else:
+                    frame_idxs = sorted([int(name.split('.')[0].split('_')[0]) for name in os.listdir(action_path) if camera in name])
+
                 assert len(frame_idxs) > 15, 'Too few frames in %s' % camera_path # otherwise WTF
                 break
         else:
@@ -221,7 +262,16 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         #                             '%s.h5' % action_to_una_dinosauria[subject].get(action, action.replace('-', ' '))), 'r') as poses_file:
         # poses_world = np.array(poses_file['3D_positions']).T.reshape(-1, 32, 3)[frame_idxs][:, valid_joints]
         # poses_world = numpy.load(os.path.join(subject_path, action, subject + "_" + action + "_" + camera + "_3d.npy"))[frame_idxs][:, valid_joints]
-        poses_world = numpy.load(os.path.join(subject_path, action, subject + "_" + action + "_global_3d.npy"))[frame_idxs][:, 0, valid_joints] # 0 in dim 1 for person_id
+        folder_files = [_file for _file in os.listdir(os.path.join(
+            subject_path,
+            metadata[subject][action]))
+            if '_global_3d.npy' in _file]
+        bbfile = folder_files[0]
+
+        # if (subject == 'S3'):
+        #     poses_world = numpy.load(os.path.join(subject_path, metadata[subject][action], bbfile))[frame_idxs][:, 0, valid_joints, :] # 0 in dim 1 for person_id
+        # else:
+        poses_world = numpy.load(os.path.join(subject_path, metadata[subject][action], bbfile))[frame_idxs][:, valid_joints, 0, :] # 0 in dim 1 for person_id
 
         table_segment = np.empty(len(frame_idxs), dtype=table_dtype)
         table_segment['subject_idx'] = subject_idx
@@ -232,9 +282,9 @@ for subject_idx, subject in enumerate(retval['subject_names']):
 
         for (camera_idx, camera) in enumerate(retval['camera_names']):
             camera_path = os.path.join(action_path, camera)
-            if not os.path.isdir(camera_path):
-                print('Warning: camera %s isn\'t present in %s/%s' % (camera, subject, action))
-                continue
+            # if not os.path.isdir(camera_path):
+            #     print('Warning: camera %s isn\'t present in %s/%s' % (camera, subject, action))
+            #     continue
             
             for bbox, frame_idx in zip(table_segment['bbox_by_camera_tlbr'], frame_idxs):
                 bbox[camera_idx] = bboxes[subject][action][camera][frame_idx]
