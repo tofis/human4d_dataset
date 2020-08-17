@@ -1,4 +1,4 @@
-# HUMAN4D: A Human-Centric MultimodalDataset for Motions & Immersive Media
+# HUMAN4D: A Human-Centric Multimodal Dataset for Motions & Immersive Media
 
 <b>At this moment, the paper of the dataset is under review.
 The dataset is going to be published along with the publication of the dataset.</b>
