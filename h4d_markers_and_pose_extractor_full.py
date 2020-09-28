@@ -31,17 +31,19 @@ from spacepy import pycdf
 
 from sklearn.cluster import AgglomerativeClustering
 
+import json
+
 
 ply_colors = [ 'red', 'blue', 'orange', 'green', 'brown' ]
 sequence_paths = [
     ### SUBJECT 1 ###
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-12-28",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-12-28",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-13-23",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-14-17",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-15-13",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-17-29",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-17-29",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-20-39",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-21-48",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-21-48",
     ### SUBJECT 2 ###
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-16-58",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-17-52",
@@ -49,13 +51,13 @@ sequence_paths = [
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-26-19",
     ### SUBJECT 3 ###
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-12-49",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-14-07",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-15-30",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-16-22",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-14-07",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-15-30",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-16-22",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-17-54",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-18-57",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-18-57",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-20-28",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-21-36",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-21-36",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-22-37",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-23-34",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-25-04",
@@ -64,13 +66,13 @@ sequence_paths = [
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-29-28",
     ### SUBJECT 4 ###
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-10-24",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-11-24",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-12-33",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-13-39",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-11-24",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-12-33",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-13-39",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-14-40",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-15-39",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-15-39",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-17-02",
-    "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-18-12",
+    # "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-18-12",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-19-22",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-20-30",
     "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S4/19-07-12-12-21-22",
@@ -80,14 +82,14 @@ sequence_paths = [
 ]
 
 sequence_files = [
-     ### SUBJECT 1 ###
-    "INF_Running_S1_01",             
+    ### SUBJECT 1 ###
+    # "INF_Running_S1_01",             
     "INF_JumpingJack_S1_01",         
     "INF_Bending_S1_01",             
     "INF_PunchingKicking_S1_01",     
-    "INF_LayingDown_S1_01",          
+    # "INF_LayingDown_S1_01",          
     "INF_SittingStanding_S1_01",     
-    "INF_Talking_S1_01",             
+    # "INF_Talking_S1_01",             
     ### SUBJECT 2 ###
     "INF_JumpingJack_S2_01",         
     "INF_Bending_S2_01",             
@@ -95,13 +97,13 @@ sequence_files = [
     "INF_SittingStanding_S2_01",
     ### SUBJECT 3 ###
     "INF_Running_S3_01_eval",
-    "INF_JumpingJack_S3_01",          
-    "INF_Bending_S3_01",             
-    "INF_PunchingKicking_S3_01",     
+    # "INF_JumpingJack_S3_01",          
+    # "INF_Bending_S3_01",             
+    # "INF_PunchingKicking_S3_01",     
     "INF_Basketball_S3_01",          
-    "INF_LayingDown_S3_01",          
+    # "INF_LayingDown_S3_01",          
     "INF_SittingFloor_S3_01",        
-    "INF_SittingStanding_S3_01",     
+    # "INF_SittingStanding_S3_01",     
     "INF_Talking_S3_01",             
     "INF_PickingDroppingObj_S3_01",  
     "INF_StretchingTalking_S3_01",   
@@ -110,13 +112,13 @@ sequence_files = [
     "INF_InflightSafety_S3_01",      
     ### SUBJECT 4 ###
     "INF_Running_S4_01",             
-    "INF_JumpingJack_S4_01",         
-    "INF_Bending_S4_01",             
-    "INF_PunchingKicking_S4_01",     
+    # "INF_JumpingJack_S4_01",         
+    # "INF_Bending_S4_01",             
+    # "INF_PunchingKicking_S4_01",     
     "INF_Basketball_S4_01",          
-    "INF_LayingDown_S4_01",          
+    # "INF_LayingDown_S4_01",          
     "INF_SittingFloor_S4_01",        
-    "INF_SittingStanding_S4_01",     
+    # "INF_SittingStanding_S4_01",     
     "INF_Talking_S4_01",             
     "INF_PickingDroppingObj_S4_01",  
     "INF_StretchingTalking_S4_01",   
@@ -129,12 +131,27 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch Show Pose and Pointcloud")
     parser.add_argument(
         "--show_markers",
-        default=True,      
+        default=False,      
         help="render marker positions",
     )
     parser.add_argument(
         "--show_joints",
-        default=True,      
+        default=False,      
+        help="render joint positions",
+    )
+    parser.add_argument(
+        "--show_rect",
+        default=False,      
+        help="render joint positions",
+    )
+    parser.add_argument(
+        "--save_img",
+        default=False,      
+        help="render joint positions",
+    )
+    parser.add_argument(
+        "--show_img",
+        default=False,      
         help="render joint positions",
     )
     parser.add_argument(
@@ -264,15 +281,17 @@ def main():
 
     args = parser.parse_args()
 
-    rs_step = 2
+    rs_step = 1
     rs_threshold = 100
-    rs_floor = 830 # 2 x 410 mm = 820 mm is the theoretical distance from the floor based on the IKEA box structure
+    rs_floor = 820 # 2 x 410 mm = 820 mm is the theoretical distance from the floor based on the IKEA box structure
 
     COLORS = get_COLORS()
 
     seq_id = 0
     for sequence_path in sequence_paths:
         sequence_filename = sequence_files[seq_id]
+        print(sequence_filename)
+
         device_repo_path = os.path.join(sequence_path,"../../../device_repository.json")
         if not os.path.exists(device_repo_path):
             raise ValueError("{0} does not exist".format(device_repo_path))            
@@ -327,7 +346,7 @@ def main():
             all_sequence_3d[view] = numpy.zeros([h4d_seq.num_of_frames, gt_joints_t.shape[2], gt_joints_t.shape[3], gt_joints_t.shape[1]])
             all_sequence_bbox[view] = numpy.zeros([h4d_seq.num_of_frames, gt_joints_t.shape[2], 4], dtype=numpy.int16)
 
-        for i in range(h4d_seq.num_of_frames):
+        for i in range(h4d_seq.num_of_frames-1): ## -1 to remove T-Pose
             view_id = 0
             markers_2d_obs = {}
             markers2d = {}
@@ -354,7 +373,7 @@ def main():
             if gt_index >= gt_joints.shape[0]:
                 break
             
-            data_out = os.path.join(sequence_path, sequence_filename + "_" + os.path.basename(sequence_path) + "_data_new")
+            data_out = os.path.join(sequence_path, sequence_filename + "_" + os.path.basename(sequence_path) + "_data_final_raw_calib")
             if (not os.path.exists(data_out)):
                 os.makedirs(data_out)
 
@@ -453,7 +472,7 @@ def main():
                             uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, p, j], intr_rgb[view])
                             keypoints[p, j] = uv
 
-                        print("uv: " + str(uv) + " p: " + str(p) + " j: " + str(j))
+                        # print("uv: " + str(uv) + " p: " + str(p) + " j: " + str(j))
                         if (args.show_joints):
                             img_c = cv2.drawMarker(img_c, 
                                                 (int(uv[0]), int(uv[1])), 
@@ -480,13 +499,14 @@ def main():
                     all_sequence_bbox[view][i, p, 2] = max_x if max_x <= width - 1 else width - 1
                     all_sequence_bbox[view][i, p, 3] = max_y if max_y <= height - 1 else height - 1 
 
-                    cv2.rectangle(img_c, (all_sequence_bbox[view][i, p, 0], all_sequence_bbox[view][i, p, 1]), \
-                        (all_sequence_bbox[view][i, p, 2], all_sequence_bbox[view][i, p, 3]), (250, 100, 100), thickness=2)
+                    if (args.show_rect):
+                        cv2.rectangle(img_c, (all_sequence_bbox[view][i, p, 0], all_sequence_bbox[view][i, p, 1]), \
+                            (all_sequence_bbox[view][i, p, 2], all_sequence_bbox[view][i, p, 3]), (250, 100, 100), thickness=2)
 
                     if (args.show_joints):
                         draw_skeleton_joints(img_c, keypoints[p], COLORS)                
 
-                    if (h4d_seq.cameras[view][i].groupframe_id > rs_threshold and h4d_seq.cameras[view][i].groupframe_id % rs_step == 0):
+                    if (args.save_img and h4d_seq.cameras[view][i].groupframe_id > rs_threshold and h4d_seq.cameras[view][i].groupframe_id % rs_step == 0):
                         savefolder = os.path.join(sequence_path, "imgs")
                         if not os.path.exists(savefolder):
                             os.makedirs(savefolder)
@@ -536,72 +556,44 @@ def main():
                         cX = int(M["m10"] / M["m00"] / 4)
                         cY = int(M["m01"] / M["m00"] / 4)
                     
-                        offset = 2
-                        depths = []
-                        for x in range(-offset, offset):
-                            for y in range(-offset, offset):
-                                depths.append(points_3d[cY+y, cX+x][2].cpu().numpy())
+                        # offset = 2
+                        # points4depth = []
+                        # for x in range(-offset, offset):
+                        #     for y in range(-offset, offset):
+                        #         if (cY+y > -1 and cY+y < h and \
+                        #             cX+x > -1 and cX+x < w):
+                        #             points4depth.append([cY+y, cX+x, points_3d[cY+y, cX+x][2].cpu().numpy()])
 
-                        depths.sort()
-                        depth = depths[len(depths)//2]
-                        if (cY > 0.05 * h and cY < 0.95 * h and \
-                            cX > 0.05 * w and cX < 0.95 * w and \
-                            depth > 300 and \
-                            depth < 2800): # and \
-                            # points_3d[cY, cX][1].cpu().numpy() > rs_floor):
-                            markers2d[view].append((4 * cX, 4 * cY))  
-                            marker_point_3d = points_3d_t[cY, cX].cpu().numpy()
-                            marker_point_3d[2] = depth
-                            markers3d[view].append(marker_point_3d)
-                            marker_3d_points.append(marker_point_3d)
+                        # points4depth.sort()
+
+                        # if len(points4depth):
+                        #     sorted(points4depth, key=lambda x: x[2])
+                        #     selected_point = points4depth[len(points4depth)//2]
+                        
+                        selected_point = [cY, cX, points_3d[cY, cX][2].cpu().numpy()]
+                        if selected_point[2] > 50 and selected_point[2] < 3500:
+                            if (selected_point[0] > -1 and selected_point[0] < h and \
+                                selected_point[1] > -1 and selected_point[1] < w): # and \
+                                    # points_3d[cY, cX][1].cpu().numpy() > rs_floor):
+                                    markers2d[view].append((4 * selected_point[1], 4 * selected_point[0]))  
+                                    marker_point_3d = points_3d_t[selected_point[0], selected_point[1]].cpu().numpy()
+                                    markers3d[view].append(marker_point_3d)
+                                    marker_3d_points.append(marker_point_3d)
                             
                     gt_markers_t_temp = gt_markers_t.clone().squeeze()[gt_index].cpu().numpy()
                     
-                    # bip_graph = nx.Graph()
-                    # for x in range(gt_markers_t_temp.shape[1]):
-                    #     bip_graph.add_node(format(x, "05d"), bipartite=0)
-                    #     for y in range(len(markers3d[view])):
-                    #         bip_graph.add_node(format(y, "03d"), bipartite=1)
-                            
-                    
-                    # for x in range(gt_markers_t_temp.shape[1]):
-                    #     for y in range(len(markers3d[view])):
-                    #         cost = numpy.linalg.norm(gt_markers_t_temp[:, x] - markers3d[view][y])
-                    #         if (cost < 500):
-                    #             bip_graph.add_edge(format(x, "05d"), format(y, "03d"), weight = cost)
-                    #         else:
-                    #             bip_graph.add_edge(format(x, "05d"), format(y, "03d"), weight = 10000)
-
-                    # matches = nx.algorithms.bipartite.minimum_weight_full_matching(bip_graph)
-
-                    # vicon_id = 0
-                    # for match_id in matches:
-                    #     if (len(match_id) == 5):
-                    #         print(match_id + " " + matches[match_id] + ": " + str(bip_graph[match_id][matches[match_id]]['weight']))
-                    #         rs_id = int(matches[match_id])                    
-                            
-                    #         if (bip_graph[match_id][matches[match_id]]['weight'] < 50):
-                    #             markers_2d_obs[view].append(int(match_id))
-
-                    #             markers2d_of_camera[view].append(markers2d[view][rs_id])
-                    #             markers2d_of_vicon[view].append((int(marker_keypoints[int(match_id)][0]), int(marker_keypoints[int(match_id)][1])))
-                                
-                    #             # cv2.line(img_c, 
-                    #             #             markers2d[view][rs_id], 
-                    #             #             (int(marker_keypoints[int(match_id)][0]), int(marker_keypoints[int(match_id)][1])), 
-                    #             #             COLORS["{:02d}".format(int(match_id) + 1)], 3)
-                    #         vicon_id += 1
-
-                cv2.imshow("color_" + view, cv2.transpose(img_c))
-                view_id += 1
+                if (args.show_img):
+                    cv2.imshow("color_" + view, cv2.transpose(img_c))
+                    view_id += 1
             
-            cv2.waitKey(100)
+            if (args.show_img):
+                cv2.waitKey(100)
             marker_3d_points_np = numpy.asarray(marker_3d_points)
 
-            doClustering = False # TODO: put it to args
+            doClustering = True # TODO: put it to args
             if (doClustering):
                 t1_c = time.clock()
-                clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=50).fit(marker_3d_points_np)
+                clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=40).fit(marker_3d_points_np)
                 t2_c = time.clock()
                 print("t_clustering: " + str(t2_c - t1_c))
 
@@ -649,7 +641,7 @@ def main():
                 ax = plt.axes(projection='3d')
 
                 markers = ['o', '^', 'x', '+', '*']            
-                ax.scatter(gt_markers_t_temp[0], gt_markers_t_temp[1], gt_markers_t_temp[2], marker=markers[4]) 
+                ax.scatter(gt_markers_t_temp[0], gt_markers_t_temp[1], gt_markers_t_temp[2], marker=markers[0]) 
                 ax.set_xlabel('X Label')
                 ax.set_ylabel('Y Label')
                 ax.set_zlabel('Z Label')
@@ -659,13 +651,17 @@ def main():
                     ax.set_xlabel('X Label')
                     ax.set_ylabel('Y Label')
                     ax.set_zlabel('Z Label')
+
+                 
                 else:
-                    ax.scatter(marker_3d_points_np[:, 0], marker_3d_points_np[:, 1], marker_3d_points_np[:, 2], marker=markers[2]) 
+                    ax.scatter(marker_3d_points_np[:, 0], marker_3d_points_np[:, 1], marker_3d_points_np[:, 2], marker=markers[4]) 
                     ax.set_xlabel('X Label')
                     ax.set_ylabel('Y Label')
                     ax.set_zlabel('Z Label')
 
                 plt.show()
+
+
 
             # if (len(numpy.unique(pindices)) == 53):
             if (args.do_sba):            

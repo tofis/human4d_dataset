@@ -7,11 +7,12 @@ from importers import *
 from visualization import turbo_colormap
 
 
-root = 'G:/MULTI4D_Dataset/HUMAN4D/S2/19-07-12-08-58-57/Dump/'
+# root = 'G:/MULTI4D_Dataset/HUMAN4D/S2/19-07-12-08-58-57/Dump/'
+root = 'E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-15-13/Dump'
 out = os.path.join(root, 'out')
 if (not os.path.exists(out)):
     os.makedirs(out)
-sample_id = "324"
+sample_id = "157"
 # cameras = ["M72e", "M72h", "M72i", "M72j"]
 
 colorz = [color for color in os.listdir(os.path.join(root, 'color')) \

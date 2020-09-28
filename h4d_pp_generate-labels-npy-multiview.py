@@ -20,21 +20,22 @@ h36m_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordi
 
         
 retval = {
-    'subject_names': ['S1', 'S2', 'S3', 'S4'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
+    # 'subject_names': ['S1', 'S2', 'S3', 'S4'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
+    'subject_names': ['S1', 'S4'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
     'camera_names': ['M72e', 'M72h', 'M72i', 'M72j'],
     'action_names': [
         'running',
         'junping_jack',
         'bending',
-        'punching_n_kicking',
+        # 'punching_n_kicking',
         'basketball_dribbling',
-        'laying_down',
+        # 'laying_down',
         'sitting_down',
-        'sitting_on_a_chair',
-        'talking',
+        # 'sitting_on_a_chair',
+        # 'talking',
         'object_dropping_n_picking',
         'stretching_n_talking',
-        'talking_n_walking',
+        # 'talking_n_walking',
         'watching_scary_movie',
         'in-flight_safety_announcement'
     ]
@@ -54,15 +55,58 @@ retval = {
         # 'WalkingTogether-1', 'WalkingTogether-2']
 }
 
+metadata = {}
+test_set = []
+
+# with open(os.path.join(h36m_root, 'metadata_single_ir.txt')) as metadata_file:
+#     lines = metadata_file.readlines()
+#     metadata = {}
+#     for s in retval['subject_names']:
+#         metadata[s] = {}
+
+#     for line in lines:
+#         values = line.split('\t')
+#         s = values[0]
+#         if s in metadata.keys():
+#             metadata[values[0]][values[1]] = values[2].strip()
+
 with open(os.path.join(h36m_root, 'metadata_single_ir.txt')) as metadata_file:
     lines = metadata_file.readlines()
-    metadata = {}
     for s in retval['subject_names']:
         metadata[s] = {}
-
+    subjects = []
     for line in lines:
         values = line.split('\t')
-        metadata[values[0]][values[1]] = values[2].strip()
+        if (values[1] in retval['action_names']):
+            s = values[0]
+            # if s in metadata.keys() and s not in subjects:
+            #     subjects.append(s)
+            if s in metadata.keys():
+                path = os.path.join(h36m_root, values[0], values[2].strip())
+                data_folders = [folder for folder in os.listdir(path) if '_data_final' in folder]
+                if len(data_folders):
+                    data_folder = data_folders[0]
+                    metadata[values[0]][values[1]] = {}
+                    metadata[values[0]][values[1]]['folder'] = values[2].strip()
+                    metadata[values[0]][values[1]]['fidx'] = []
+                    
+                    all_txt_samples = [txt_file for txt_file in os.listdir(os.path.join(path, data_folder)) if 'gt' in txt_file]
+
+                    for filetxt in all_txt_samples:
+                        color_id = filetxt.split('_')[1]
+                        color_filenames = [colorfile for colorfile in os.listdir(os.path.join(path, 'Dump/color')) if color_id + '_' in colorfile]
+                        for color_filename in color_filenames:
+                            full_filaname = os.path.join(path, 'Dump/color', color_filename) 
+                            # print(full_filaname)
+                            if len(color_id) > 2 and full_filaname not in test_set: # len(color_id) > 3
+                                test_set.append(full_filaname)
+                                if int(color_id) not in metadata[values[0]][values[1]]['fidx']:
+                                    metadata[values[0]][values[1]]['fidx'].append(int(color_id))
+                                
+                                
+                    # if len(metadata[values[0]][values[1]]['fidx']) > 20:
+                    #     break
+                # break
 
 retval['cameras'] = np.empty(
     (len(retval['subject_names']), len(retval['camera_names'])),
@@ -229,9 +273,9 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         if action not in metadata[subject].keys():
             continue
 
-        rgbd_skip = load_rgbd_skip(os.path.join(subject_path, "offsets.txt"), metadata[subject][action])
+        rgbd_skip = load_rgbd_skip(os.path.join(subject_path, "offsets.txt"), metadata[subject][action]['folder'])
 
-        action_path = os.path.join(subject_path, metadata[subject][action], 'Dump', 'color')
+        action_path = os.path.join(subject_path, metadata[subject][action]['folder'], 'Dump', 'color')
         if not os.path.isdir(action_path):
             raise FileNotFoundError(action_path)
 
@@ -244,11 +288,14 @@ for subject_idx, subject in enumerate(retval['subject_names']):
             #     break
             
             if os.path.isdir(action_path):
-                # frame_idxs = sorted([int(name.split('_')[0]) for name in os.listdir(camera_path)])
-                if rgbd_skip > 0:
-                    frame_idxs = sorted([int(name.split('.')[0].split('_')[0]) for name in os.listdir(action_path) if camera in name])[:-rgbd_skip]
-                else:
-                    frame_idxs = sorted([int(name.split('.')[0].split('_')[0]) for name in os.listdir(action_path) if camera in name])
+
+                # with open(os.path.join(h36m_root, 'metadata_single.txt')) as metadata_file:
+
+                frame_idxs = [fid-rgbd_skip for fid in metadata[subject][action]['fidx']]
+                # if rgbd_skip > 0:
+                #     frame_idxs = sorted([int(name.split('.')[0].split('_')[0]) for name in os.listdir(action_path) if camera in name])[:-rgbd_skip]
+                # else:
+                #     frame_idxs = sorted([int(name.split('.')[0].split('_')[0]) for name in os.listdir(action_path) if camera in name])
 
                 assert len(frame_idxs) > 15, 'Too few frames in %s' % camera_path # otherwise WTF
                 break
@@ -264,14 +311,14 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         # poses_world = numpy.load(os.path.join(subject_path, action, subject + "_" + action + "_" + camera + "_3d.npy"))[frame_idxs][:, valid_joints]
         folder_files = [_file for _file in os.listdir(os.path.join(
             subject_path,
-            metadata[subject][action]))
+            metadata[subject][action]['folder']))
             if '_global_3d.npy' in _file]
         bbfile = folder_files[0]
 
         # if (subject == 'S3'):
         #     poses_world = numpy.load(os.path.join(subject_path, metadata[subject][action], bbfile))[frame_idxs][:, 0, valid_joints, :] # 0 in dim 1 for person_id
         # else:
-        npy_poses = numpy.load(os.path.join(subject_path, metadata[subject][action], bbfile))
+        npy_poses = numpy.load(os.path.join(subject_path, metadata[subject][action]['folder'], bbfile))
         frame_idxs_final = [fid for fid in frame_idxs if fid < len(npy_poses)]
         poses_world = npy_poses[frame_idxs_final][:, valid_joints, 0, :] # 0 in dim 1 for person_id
 
