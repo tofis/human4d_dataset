@@ -12,7 +12,7 @@ Pictures taken during the preparation and capturing of the HUMAN4D dataset. The 
 HW-SYNCed multi-view RGBD samples (4 RGBD frames each) from "stretching_n_talking"(top) and "basket-ball_dribbling"(bottom) activities. 
 
 ![alt text](https://raw.githubusercontent.com/tofis/myurls/master/human4d/imgs/actor_bodyscan_s.png)
-sing  a  custom  photogrammetry  rig  with  96 cameras,  photos  were  taken  of  the  actor  (left)  and  recon-structed  into  a  3D  textured  mesh  using  Agisoft  Metashape (right).
+3D Scanning using a custom photogrammetry rig with 96 cameras, photos were taken of the actor (left) and reconstructed into a 3D textured mesh using Agisoft Metashape (right).
 
 ![alt text](https://raw.githubusercontent.com/tofis/myurls/master/human4d/imgs/meshreco2.png)
 Reconstructed mesh-based volumetric  data  with  (Left)  color  per  vertex  visualization  in 3  voxel-grid resolutions, i.e. r= 5, r= 6 andr= 7 and (Right) textured 3D mesh sample in voxel-grid resolution for r= 6.
