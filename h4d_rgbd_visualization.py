@@ -12,7 +12,7 @@ root = 'E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_
 out = os.path.join(root, 'out')
 if (not os.path.exists(out)):
     os.makedirs(out)
-sample_id = "157"
+sample_id = "523"
 # cameras = ["M72e", "M72h", "M72i", "M72j"]
 
 colorz = [color for color in os.listdir(os.path.join(root, 'color')) \
@@ -37,7 +37,7 @@ for depth in depthz:
     # img = cv2.LUT(depth_img, numpy.asarray(turbo_colormap.turbo_colormap_data).astype(numpy.float32))
     img = (img * 255).astype(numpy.uint8)
     #cv2.imshow("show", cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE))
-    cv2.imwrite(os.path.join(out, depth).replace('.pgm', '.png'), img)
+    cv2.imwrite(os.path.join(out, depth).replace('.pgm', '.png'), cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE))
     
     #cv2.waitKey()
 

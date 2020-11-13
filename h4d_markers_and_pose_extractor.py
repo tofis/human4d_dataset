@@ -30,6 +30,7 @@ from sparseba import SBA
 from spacepy import pycdf
 
 from sklearn.cluster import AgglomerativeClustering
+from visualization import turbo_colormap
 
 
 ply_colors = [ 'red', 'blue', 'orange', 'green', 'brown' ]
@@ -66,7 +67,7 @@ def main():
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-12-28",    +
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-13-23",    +
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-14-17",    +
-        # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-15-13",    +
+        default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-15-13",    
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-16-29",    -
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-17-29",    +
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-19-14",    -
@@ -76,7 +77,7 @@ def main():
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-16-58",    +
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-17-52",    +
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-18-54",    +
-        default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-26-19",
+        # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S2/19-07-12-09-26-19",
 
         ### SUBJECT 3 ###
         # default="E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S3/19-07-12-10-12-49",    +
@@ -116,7 +117,7 @@ def main():
         # default="INF_Running_S1_01",              +
         # default="INF_JumpingJack_S1_01",          +
         # default="INF_Bending_S1_01",              +
-        # default="INF_PunchingKicking_S1_01",      +
+        default="INF_PunchingKicking_S1_01",      
         # default="INF_Basketball_S1_01",           +
         # default="INF_LayingDown_S1_01",           +
         # default="INF_SittingFloor_S1_01",         -
@@ -126,7 +127,7 @@ def main():
         # default="INF_JumpingJack_S2_01",          +
         # default="INF_Bending_S2_01",              +
         # default="INF_PunchingKicking_S2_01",      +
-        default="INF_SittingStanding_S2_01",
+        # default="INF_SittingStanding_S2_01",
         ### SUBJECT 3 ###
         # default="INF_Running_S3_01_eval",         +
         # default="INF_JumpingJack_S3_01,           +
@@ -168,7 +169,7 @@ def main():
     parser.add_argument(
         "--frames2save",     
         nargs="*", type=int, 
-        default = [20, 200, 280, 324, 400],
+        default = [20, 200, 280, 324, 400, 523],
         help="frame ids to be saved in .png",
     )
 
@@ -207,7 +208,7 @@ def main():
     time_step = 8.33333
     translation_gt = torch.tensor([59.0,  80.0, 820.0]).reshape(3, 1)
     r = R.from_euler('xyz',[0, -2, 124.5], degrees=True)
-    rotation_gt_np = r.as_matrix()
+    rotation_gt_np = r.as_dcm()
 
     # q = r.inv().as_quat()
 
@@ -307,6 +308,60 @@ def main():
                 gt_joints_view_aligned = transform_points(gt_joints_view_aligned, \
                     R_rgb, t_rgb)
             
+
+
+
+            ############## JOINTS
+
+            keypoints = numpy.zeros([gt_joints_t.shape[2], gt_joints_t.shape[3], 2], dtype=int)
+            keypoints3d = numpy.zeros([gt_joints_t.shape[2], gt_joints_t.shape[3], 3], dtype=float)
+            for p in range(gt_joints_t.shape[2]):
+                for j in range(gt_joints_t.shape[3]):                
+                    keypoints3d[p, j] = gt_joints_view_aligned[0, :, p, j].cpu().numpy()
+                    if ("INF" in args.sequence_filename):
+                        uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, p, j], 4 * intr[view])
+                        keypoints[p, j] = uv
+                    else:
+                        uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, p, j], intr_rgb[view])
+                        keypoints[p, j] = uv
+
+                    print("uv: " + str(uv) + " p: " + str(p) + " j: " + str(j))
+                    # if (args.show_joints):
+                    #     img_c = cv2.drawMarker(img_c, 
+                    #                         (int(uv[0]), int(uv[1])), 
+                    #                         turbo_colormap.get_colors(150, p)[0],
+                    #                         markerType=cv2.MARKER_STAR,
+                    #                         markerSize=10,
+                    #                         thickness=2)
+
+            all_sequence_2d[view][i] = keypoints
+            all_sequence_3d[view][i] = keypoints3d
+
+            # rectangle def and drawing
+            p_offset = 20
+            for p in range(gt_joints_t.shape[2]):
+                # min_x = int(numpy.min(marker_keypoints[p, :, 0]) - p_offset)
+                # min_y = int(numpy.min(marker_keypoints[p, :, 1]) - p_offset)
+                # max_x = int(numpy.max(marker_keypoints[p, :, 0]) + p_offset)
+                # max_y = int(numpy.max(marker_keypoints[p, :, 1]) + p_offset)
+                
+                width = args.resolution[0] * 4 
+                height = args.resolution[1] * 4 
+                # all_sequence_bbox[view][i, p, 0] = min_x if min_x >= 0 else 0 
+                # all_sequence_bbox[view][i, p, 1] = min_y if min_y >= 0 else 0 
+                # all_sequence_bbox[view][i, p, 2] = max_x if max_x <= width - 1 else width - 1
+                # all_sequence_bbox[view][i, p, 3] = max_y if max_y <= height - 1 else height - 1 
+
+                # cv2.rectangle(img_c, (all_sequence_bbox[view][i, p, 0], all_sequence_bbox[view][i, p, 1]), \
+                #     (all_sequence_bbox[view][i, p, 2], all_sequence_bbox[view][i, p, 3]), (250, 100, 100), thickness=2)
+
+                if (args.show_joints):
+                    # draw_skeleton_joints(img_c, keypoints[p], COLORS)                
+                    draw_skeleton_joints_(img_c,  keypoints[p], turbo_colormap.get_colors(60, p), thickness=2)     
+
+
+                
+
             # projected = project_points_to_uvs(gt_markers_view_aligned / 1000.0, intr)           
             marker_visibility = numpy.zeros([gt_markers_t.shape[2], gt_markers_t.shape[3]], dtype=int)
             marker_keypoints = numpy.zeros([gt_markers_t.shape[2], gt_markers_t.shape[3], 2], dtype=int)           
@@ -324,21 +379,28 @@ def main():
                         if ("INF" in args.sequence_filename):      
                             if (uv[0]/4 < args.resolution[0] and uv[1]/4 < args.resolution[1]):      
                                 depth_diff = numpy.abs(int(depth_t[0, 0, int(uv[1]/4), int(uv[0]/4)]) - gt_markers_view_aligned[0, 2, p, j])                            
-                                if (depth_diff < 50):
-                                    marker_visibility[p, j] = 1
-                                    img_c = cv2.drawMarker(img_c, 
-                                                        (int(uv[0]), int(uv[1])), 
-                                                        COLORS[format(j+1, '02d')],
-                                                        markerType=cv2.MARKER_CROSS,
-                                                        markerSize=15,
-                                                        thickness=2)
-                                else:
-                                    img_c = cv2.drawMarker(img_c, 
-                                                        (int(uv[0]), int(uv[1])), 
-                                                        COLORS[format(j+1, '02d')],
-                                                        markerType=cv2.MARKER_DIAMOND,
-                                                        markerSize=5,
-                                                        thickness=1)
+                                # if (depth_diff < 50):
+                                marker_visibility[p, j] = 1
+                                img_c = cv2.drawMarker(img_c, 
+                                                    (int(uv[0]), int(uv[1])), 
+                                                    turbo_colormap.get_colors(150, p)[0],
+                                                    markerType=cv2.MARKER_CROSS,
+                                                    markerSize=15,
+                                                    thickness=2)
+                                # img_c = cv2.rotate(img_c, cv2.ROTATE_90_CLOCKWISE)
+                                img_c = cv2.rotate(img_c, cv2.ROTATE_90_CLOCKWISE)
+                                img_c = cv2.putText(img_c, format(j+1, '02d'), (720 - int(uv[1]) + 4, int(uv[0]) + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.7, turbo_colormap.get_colors(40, p)[0], 1, cv2.LINE_AA) 
+                                img_c = cv2.rotate(img_c, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                
+                #                 image = cv2.putText(image, 'OpenCV', org, font,  
+                #    fontScale, color, thickness, cv2.LINE_AA) 
+                                # else:
+                                #     img_c = cv2.drawMarker(img_c, 
+                                #                         (int(uv[0]), int(uv[1])), 
+                                #                         COLORS[format(j+1, '02d')],
+                                #                         markerType=cv2.MARKER_DIAMOND,
+                                #                         markerSize=5,
+                                #                         thickness=1)
                         else:
                             img_c = cv2.drawMarker(img_c, 
                                                 (int(uv[0]), int(uv[1])), 
@@ -348,52 +410,7 @@ def main():
                                                 thickness=2)
            
 
-            keypoints = numpy.zeros([gt_joints_t.shape[2], gt_joints_t.shape[3], 2], dtype=int)
-            keypoints3d = numpy.zeros([gt_joints_t.shape[2], gt_joints_t.shape[3], 3], dtype=float)
-            for p in range(gt_joints_t.shape[2]):
-                for j in range(gt_joints_t.shape[3]):                
-                    keypoints3d[p, j] = gt_joints_view_aligned[0, :, p, j].cpu().numpy()
-                    if ("INF" in args.sequence_filename):
-                        uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, p, j], 4 * intr[view])
-                        keypoints[p, j] = uv
-                    else:
-                        uv = project_single_point_to_uv(gt_joints_view_aligned[0, :, p, j], intr_rgb[view])
-                        keypoints[p, j] = uv
-
-                    print("uv: " + str(uv) + " p: " + str(p) + " j: " + str(j))
-                    if (args.show_joints):
-                        img_c = cv2.drawMarker(img_c, 
-                                            (int(uv[0]), int(uv[1])), 
-                                            COLORS[format(j+1, '02d')],
-                                            markerType=cv2.MARKER_STAR,
-                                            markerSize=10,
-                                            thickness=2)
-
-            all_sequence_2d[view][i] = keypoints
-            all_sequence_3d[view][i] = keypoints3d
-
-            # rectangle def and drawing
-            p_offset = 20
-            for p in range(gt_joints_t.shape[2]):
-                min_x = int(numpy.min(marker_keypoints[p, :, 0]) - p_offset)
-                min_y = int(numpy.min(marker_keypoints[p, :, 1]) - p_offset)
-                max_x = int(numpy.max(marker_keypoints[p, :, 0]) + p_offset)
-                max_y = int(numpy.max(marker_keypoints[p, :, 1]) + p_offset)
-                
-                width = args.resolution[0] * 4 
-                height = args.resolution[1] * 4 
-                all_sequence_bbox[view][i, p, 0] = min_x if min_x >= 0 else 0 
-                all_sequence_bbox[view][i, p, 1] = min_y if min_y >= 0 else 0 
-                all_sequence_bbox[view][i, p, 2] = max_x if max_x <= width - 1 else width - 1
-                all_sequence_bbox[view][i, p, 3] = max_y if max_y <= height - 1 else height - 1 
-
-                cv2.rectangle(img_c, (all_sequence_bbox[view][i, p, 0], all_sequence_bbox[view][i, p, 1]), \
-                    (all_sequence_bbox[view][i, p, 2], all_sequence_bbox[view][i, p, 3]), (250, 100, 100), thickness=2)
-
-                if (args.show_joints):
-                    draw_skeleton_joints(img_c, keypoints[p], COLORS)                
-
-                if (i in args.frames2save):
+            if (i in args.frames2save):
                     cv2.imwrite(os.path.join(args.sequence_path, "{}_{}.png".format(str(i), view)), \
                         img_c)
             ########## marker matching ###################
@@ -487,7 +504,8 @@ def main():
                 #             #             COLORS["{:02d}".format(int(match_id) + 1)], 3)
                 #         vicon_id += 1
 
-            cv2.imshow("color_" + view, cv2.transpose(img_c))
+            # cv2.imshow("color_" + view, cv2.transpose(img_c))
+            cv2.imshow("color_" + view, cv2.rotate(img_c, cv2.ROTATE_90_CLOCKWISE))
             view_id += 1
         
         cv2.waitKey(100)
@@ -625,7 +643,7 @@ def main():
             view_id = 0
             for view in h4d_seq.camera_ids:
                 r_new = R.from_rotvec(results[0][view_id][:3])
-                r_new_mat = r_new.as_matrix()
+                r_new_mat = r_new.as_dcm()
                 t_new = results[0][view_id][3:6]
 
                 # rotation_new = torch.transpose(torch.from_numpy(r_new_mat).type(torch.float), 0, 1)

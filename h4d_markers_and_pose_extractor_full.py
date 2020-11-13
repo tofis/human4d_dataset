@@ -32,7 +32,7 @@ from spacepy import pycdf
 from sklearn.cluster import AgglomerativeClustering
 
 import json
-
+import open3d
 
 ply_colors = [ 'red', 'blue', 'orange', 'green', 'brown' ]
 sequence_paths = [
@@ -302,13 +302,16 @@ def main():
         extr_files = [current_ for current_ in os.listdir(os.path.join(sequence_path, "../pose")) if ".extrinsics" in current_]
 
         extrinsics = {}
-        paths = {}
         views = []
 
-        for extr in extr_files:
-            extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(sequence_path, "../pose", extr))[0]
-            paths[extr.split(".")[0]] = os.path.join(sequence_path, "../pose", extr.split(".")[0])
-            views.append(extr.split(".")[0])
+        json_file_txt = open(os.path.join(sequence_path, "../pose/extrinsics.json"), 'r').read()
+        all_extr = json.loads(json_file_txt)
+
+        for view_id in range(len(all_extr['Viewpoints'])):
+            extrinsics[all_extr['Viewpoints'][view_id]['name']] = torch.from_numpy(numpy.asarray(all_extr['Viewpoints'][view_id]['extrinsics'])).reshape([4,4]).type(torch.FloatTensor)
+            extrinsics[all_extr['Viewpoints'][view_id]['name']][0:3, 3] *= 1000
+            # extrinsics[extr.split(".")[0]] = load_extrinsics(os.path.join(sequence_path, "../pose", extr))[0]
+            views.append(all_extr['Viewpoints'][view_id]['name'])
 
         gt_joints = load_joints_seq(os.path.join(sequence_path, sequence_filename + ".joints"))
         gt_markers = load_markers_seq(os.path.join(sequence_path, sequence_filename + ".markers"))
@@ -317,21 +320,23 @@ def main():
         # gt_markers = numpy.expand_dims(gt_markers[:, 0, :, :], axis=1)
 
         time_step = 8.33333
-        translation_gt = torch.tensor([59.0,  80.0, 820.0]).reshape(3, 1)
-        r = R.from_euler('xyz',[0, -2, 124.5], degrees=True)
-        rotation_gt_np = r.as_matrix()
+        
+        transform_vicon = numpy.load(os.path.join(sequence_path, "../pose/", "extr.npy"))
 
-        # q = r.inv().as_quat()
+        
+    
+        rotation_gt = torch.from_numpy(transform_vicon[0:3, 0:3]).type(torch.float)
+        translation_gt = torch.tensor(transform_vicon[0:3, 3]).reshape(3, 1).type(torch.float)
 
-        rotation_gt = torch.from_numpy(rotation_gt_np).type(torch.float)
-
-        rotation_gt_inv = torch.inverse(rotation_gt)
-        translation_gt_inv = - rotation_gt_inv @ translation_gt
+        
         gt_markers_t = torch.from_numpy(gt_markers).reshape(gt_markers.shape[0], gt_markers.shape[1], gt_markers.shape[2], gt_markers.shape[3]).permute(0, 3, 1, 2).type(torch.float)
         gt_joints_t = torch.from_numpy(gt_joints).reshape(gt_joints.shape[0], gt_joints.shape[1], gt_joints.shape[2], gt_joints.shape[3]).permute(0, 3, 1, 2).type(torch.float)
         # transform vicon
-        gt_markers_t = transform_points(gt_markers_t, rotation_gt_inv, translation_gt_inv)
-        gt_joints_t = transform_points(gt_joints_t, rotation_gt_inv, translation_gt_inv)
+        gt_markers_t = transform_points(gt_markers_t, rotation_gt, translation_gt)
+        gt_joints_t = transform_points(gt_joints_t, rotation_gt, translation_gt)
+      
+
+
 
         rgbd_skip = load_rgbd_skip(os.path.join(sequence_path, "../offsets.txt"), os.path.basename(sequence_path))
         h4d_seq = H4DSequence(os.path.join(sequence_path, "Dump"), ["M72e", "M72h", "M72i", "M72j"], skip=rgbd_skip, test_mode=args.test_mode)
@@ -373,7 +378,7 @@ def main():
             if gt_index >= gt_joints.shape[0]:
                 break
             
-            data_out = os.path.join(sequence_path, sequence_filename + "_" + os.path.basename(sequence_path) + "_data_final_raw_calib")
+            data_out = os.path.join(sequence_path, sequence_filename + "_" + os.path.basename(sequence_path) + "_data_final_raw_calib_new")
             if (not os.path.exists(data_out)):
                 os.makedirs(data_out)
 
@@ -593,7 +598,7 @@ def main():
             doClustering = True # TODO: put it to args
             if (doClustering):
                 t1_c = time.clock()
-                clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=40).fit(marker_3d_points_np)
+                clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=20).fit(marker_3d_points_np)
                 t2_c = time.clock()
                 print("t_clustering: " + str(t2_c - t1_c))
 
@@ -637,17 +642,72 @@ def main():
             global_sequence_3d[i] = numpy.transpose(gt_joints_t_temp, (2, 1, 0)).copy()
 
             if (h4d_seq.cameras[view][i].groupframe_id > rs_threshold and h4d_seq.cameras[view][i].groupframe_id % rs_step == 0 and args.vis_3d):
-            # if (args.vis_3d):
+
+                
+                
+                # ###########
+                # translation_gt = torch.tensor([59.0, 80.0, 820.0]).reshape(3, 1)
+                # r = R.from_euler('xyz',[0, -2, 124.5], degrees=True)
+                # rotation_gt_np = r.as_dcm()
+                # rotation_gt = torch.from_numpy(rotation_gt_np).type(torch.float)
+
+                # rotation_gt_inv = torch.inverse(rotation_gt)
+                # translation_gt_inv = - rotation_gt_inv @ translation_gt
+
+                # trans_init = numpy.zeros([4, 4], dtype=numpy.float)
+                # trans_init[0:3, 0:3] = rotation_gt_inv.cpu().numpy()
+                # trans_init[0:3, 3] = translation_gt_inv.squeeze(1).cpu().numpy()
+                # trans_init[3, 3] = 1
+                
+                
+                # ##########
+                # pcd_rs = open3d.geometry.PointCloud()
+                # pcd_rs.points = open3d.utility.Vector3dVector(centers)
+
+                # pcd_gt = open3d.geometry.PointCloud()
+                # pcd_gt.points = open3d.utility.Vector3dVector(gt_markers_t_temp.copy().transpose())
+
+                # # trans_init = np.asarray([
+                # #          [1.0, 0.0, 0.0, 0.0],
+                # #          [0.0, 1.0, 0.0, 0.0],
+                # #          [0.0, 0.0, 1.0, 0.0],
+                # #          [0.0, 0.0, 0.0, 1.0]])
+
+                # transform_ = open3d.registration.registration_icp(pcd_gt, pcd_rs, 200, trans_init, 
+                #             open3d.registration.TransformationEstimationPointToPoint(), open3d.registration.ICPConvergenceCriteria(max_iteration = 5000))
+
+                
+
+
+                # print(transform_)
+                
+                # pcd_gt.transform(transform_.transformation)
+                # numpy.save(os.path.join(sequence_path, "../pose/", "extr.npy"), transform_.transformation)
+                # # open3d.registration.evaluate_registration(pcd_gt, pcd_rs, 30, trans_init)
+           
                 ax = plt.axes(projection='3d')
 
                 markers = ['o', '^', 'x', '+', '*']            
-                ax.scatter(gt_markers_t_temp[0], gt_markers_t_temp[1], gt_markers_t_temp[2], marker=markers[0]) 
+                # ax.scatter(gt_markers_t_temp[0], gt_markers_t_temp[1], gt_markers_t_temp[2], marker=markers[0]) 
+                # pcd_gt_points = numpy.asarray(pcd_gt.points)
+                # ax.scatter(pcd_gt_points[:, 0], pcd_gt_points[:, 1], pcd_gt_points[:, 2], marker=markers[1]) 
+
+                # pcd_rs_points = numpy.asarray(pcd_rs.points)
+
+                ax.scatter(gt_markers_t_temp.copy().transpose()[:, 0], gt_markers_t_temp.copy().transpose()[:, 1], gt_markers_t_temp.copy().transpose()[:, 2], marker=markers[2]) 
+                ax.set_xlabel('X Label')
+                ax.set_ylabel('Y Label')
+                ax.set_zlabel('Z Label')
+
+
                 ax.set_xlabel('X Label')
                 ax.set_ylabel('Y Label')
                 ax.set_zlabel('Z Label')
 
                 if (doClustering):
                     ax.scatter(centers[:, 0], centers[:, 1], centers[:, 2], marker=markers[4]) 
+                    # ax.scatter(pcd_rs_points[:, 0], pcd_rs_points[:, 1], pcd_rs_points[:, 2], marker=markers[4]) 
+
                     ax.set_xlabel('X Label')
                     ax.set_ylabel('Y Label')
                     ax.set_zlabel('Z Label')
@@ -655,6 +715,7 @@ def main():
                  
                 else:
                     ax.scatter(marker_3d_points_np[:, 0], marker_3d_points_np[:, 1], marker_3d_points_np[:, 2], marker=markers[4]) 
+                    # ax.scatter(pcd_rs_points[:, 0], pcd_rs_points[:, 1], pcd_rs_points[:, 2], marker=markers[4]) 
                     ax.set_xlabel('X Label')
                     ax.set_ylabel('Y Label')
                     ax.set_zlabel('Z Label')
@@ -726,7 +787,7 @@ def main():
                 view_id = 0
                 for view in h4d_seq.camera_ids:
                     r_new = R.from_rotvec(results[0][view_id][:3])
-                    r_new_mat = r_new.as_matrix()
+                    r_new_mat = r_new.as_dcm()
                     t_new = results[0][view_id][3:6]
 
                     # rotation_new = torch.transpose(torch.from_numpy(r_new_mat).type(torch.float), 0, 1)

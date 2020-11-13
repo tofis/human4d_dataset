@@ -21,23 +21,23 @@ h36m_root = "E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordi
         
 retval = {
     # 'subject_names': ['S1', 'S2', 'S3', 'S4'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
-    'subject_names': ['S1', 'S4'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
+    'subject_names': ['S1', 'S2', 'S3', 'S4'], #, 'S2', 'S6', 'S7', 'S8', 'S9', 'S11'],
     'camera_names': ['M72e', 'M72h', 'M72i', 'M72j'],
     'action_names': [
-        'running',
-        'junping_jack',
-        'bending',
-        # 'punching_n_kicking',
-        'basketball_dribbling',
+        # 'running',
+        # 'junping_jack',
+        # 'bending',
+        'punching_n_kicking',
+        # 'basketball_dribbling',
         # 'laying_down',
-        'sitting_down',
-        # 'sitting_on_a_chair',
+        # 'sitting_down',
+        'sitting_on_a_chair',
         # 'talking',
-        'object_dropping_n_picking',
+        # 'object_dropping_n_picking',
         'stretching_n_talking',
         # 'talking_n_walking',
-        'watching_scary_movie',
-        'in-flight_safety_announcement'
+        # 'watching_scary_movie',
+        # 'in-flight_safety_announcement'
     ]
         # 'Discussion-1', 'Discussion-2',
         # 'Eating-1', 'Eating-2',
@@ -305,6 +305,40 @@ for subject_idx, subject in enumerate(retval['subject_names']):
         # 16 joints in MPII order + "Neck/Nose"
         # valid_joints = (3,2,1,6,7,8,0,12,13,15,27,26,25,17,18,19) + (14,)
         valid_joints = (23,22,21,27,28,29,0,4,6,8,12,11,10,16,17,18) + (7,)
+
+        # 21: RightUpLeg, 22: RightLeg, 23: RightFoot, 27: LeftUpLeg, 28: LeftLeg, 29: LeftFoot, 0: Hips, 4: Spine3, 6: Neck(spine),
+        # 8: Neck, 12: RightWrist, 11: RightElbow, 10: RightShoulder, 16: LeftShoulder, 17: LeftElbow, 18: LeftWrist, 7: Head
+# 0	Hips
+# 1	Spine
+# 2	Spine1
+# 3	Spine2
+# 4	Spine3
+# 5	Neck
+# 6	Neck1
+# 7	Head
+# 8	HeadEnd
+# 9	RightShoulder
+# 10	RightArm
+# 11	RightForeArm
+# 12	RightHand
+# 13	RightHandThumb1
+# 14	RightHandMiddle1
+# 15	LeftShoulder
+# 16	LeftArm
+# 17	LeftForeArm
+# 18	LeftHand
+# 19	LeftHandThumb1
+# 20	LeftHandMiddle1
+
+# 24	RightForeFoot
+# 25	RightToeBase
+# 26	RightToeBaseEnd
+# 27	LeftUpLeg
+# 28	LeftLeg
+# 29	LeftFoot
+# 30	LeftForeFoot
+# 31	LeftToeBase
+# 32	LeftToeBaseEnd
         # with h5py.File(os.path.join(una_dinosauria_root, subject, 'MyPoses', '3D_positions',
         #                             '%s.h5' % action_to_una_dinosauria[subject].get(action, action.replace('-', ' '))), 'r') as poses_file:
         # poses_world = np.array(poses_file['3D_positions']).T.reshape(-1, 32, 3)[frame_idxs][:, valid_joints]
