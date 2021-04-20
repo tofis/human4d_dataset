@@ -1,45 +1,40 @@
 import os
-from shutil import copyfile
-
 import numpy
 import cv2
-from importers import *
+from importers import readpgm
 from visualization import turbo_colormap
 
-
-# root = 'G:/MULTI4D_Dataset/HUMAN4D/S2/19-07-12-08-58-57/Dump/'
-root = 'E:/VCL/Users/tofis/Data/DATASETS/RGBDIRD_MOCAP_DATASET/Data/Recordings/_ird_recordings/S1/19-07-12-08-15-13/Dump'
+# sequence root folder, including color and depth subfolders with RGBD data
+root = 'E:/Datasets/HUMAN4D/S1/19-07-12-07-32-22/Dump'
 out = os.path.join(root, 'out')
 if (not os.path.exists(out)):
     os.makedirs(out)
-sample_id = "523"
-# cameras = ["M72e", "M72h", "M72i", "M72j"]
 
-colorz = [color for color in os.listdir(os.path.join(root, 'color')) \
-    if sample_id in color.split('_')[0]]
-depthz = [depth for depth in os.listdir(os.path.join(root, 'depth')) \
-    if sample_id in depth.split('_')[0]]
+colorz = os.listdir(os.path.join(root, 'color'))
+depthz = os.listdir(os.path.join(root, 'depth'))
 
-for color in colorz:    
-    copyfile(os.path.join(root, 'color', color), os.path.join(out, color))
+assert len(colorz) == len(depthz)
 
-for depth in depthz:
-    depth_img = readpgm(os.path.join(root, 'depth', depth)).astype(numpy.float) / 10.0
-    # depth_img[depth_img > 3000] = 0
-    # depth_img[depth_img < 1200] = 0
+for i in range(len(depthz)):
+    # depth values in 100um are converted to mm by diving by 10.0
+    depth_img = readpgm(os.path.join(root, 'depth', depthz[i])).astype(numpy.float) / 10.0
+    # normalization
     depth_img /= numpy.max(depth_img)
-    # depth_img /= 10000
     depth_img = (depth_img * 255).astype(numpy.uint8)
-    img = numpy.zeros([180, 320, 3], dtype=numpy.float32)
-    for x in range(img.shape[1]):
-        for y in range(img.shape[0]):
-            img[y, x] = turbo_colormap.turbo_colormap_data[depth_img[y, x]]
-    # img = cv2.LUT(depth_img, numpy.asarray(turbo_colormap.turbo_colormap_data).astype(numpy.float32))
-    img = (img * 255).astype(numpy.uint8)
-    #cv2.imshow("show", cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE))
-    cv2.imwrite(os.path.join(out, depth).replace('.pgm', '.png'), cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE))
-    
-    #cv2.waitKey()
+    colored_depth_img = numpy.zeros([depth_img.shape[0], depth_img.shape[1], 3], dtype=numpy.float32)
+    # turbo colormap visualization
+    for x in range(colored_depth_img.shape[1]):
+        for y in range(colored_depth_img.shape[0]):
+            colored_depth_img[y, x] = turbo_colormap.turbo_colormap_data[depth_img[y, x]]            
+    colored_depth_img = (colored_depth_img * 255).astype(numpy.uint8)
+
+    # rotate to show the image properly due to vertical orientation
+    cv2.imshow("depth", cv2.rotate(colored_depth_img, cv2.ROTATE_90_CLOCKWISE))
+
+    color_img = cv2.imread(os.path.join(root, 'color', colorz[i]))
+    # rotate to show the image properly due to vertical orientation
+    cv2.imshow("color", cv2.rotate(color_img, cv2.ROTATE_90_CLOCKWISE))
+    cv2.waitKey(1)
 
 
 
