@@ -16,3 +16,16 @@ Reconstructed mesh-based volumetric  data  with  (Left)  color  per  vertex  vis
 
 ![alt text](https://raw.githubusercontent.com/tofis/myurls/master/human4d/imgs/pcloud.png)
 Merged reconstructed point-cloud from one single mRGBD frame from various views.
+
+If you used the dataset or found this work useful, please cite:
+```
+@article{chatzitofis2020human4d,
+  title={HUMAN4D: A Human-Centric Multimodal Dataset for Motions and Immersive Media},
+  author={Chatzitofis, Anargyros and Saroglou, Leonidas and Boutis, Prodromos and Drakoulis, Petros and Zioulis, Nikolaos and Subramanyam, Shishir and Kevelham, Bart and Charbonnier, Caecilia and Cesar, Pablo and Zarpalas, Dimitrios and others},
+  journal={IEEE Access},
+  volume={8},
+  pages={176241--176262},
+  year={2020},
+  publisher={IEEE}
+}
+```
