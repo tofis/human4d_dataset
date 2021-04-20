@@ -2,6 +2,16 @@
 
 HUMAN4D constitutes a large and multimodal 4D dataset that contains a variety of human activities simultaneously captured by a professional marker-based MoCap, a volumetric capture and an audio recording system.
 
+The related paper can be found [here](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9204617) in PDF.
+
+You can download the dataset from Zenodo (in various parts):
+- https://zenodo.org/record/4473009#.YH6nvOgzaUk
+- https://zenodo.org/record/4473047#.YH6n1egzaUk
+- https://zenodo.org/record/4483817#.YH6n5OgzaUk
+- https://zenodo.org/record/4484110#.YH6n-ugzaUk
+
+For data that are not publicly available but are included in the [HUMAN4D dataset](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9204617), contact us @ tofis3d [at] central.ntua.gr.
+
 ![alt text](https://raw.githubusercontent.com/tofis/myurls/master/human4d/imgs/facilities.png)
 Pictures taken during the preparation and capturing of the HUMAN4D dataset. The room was equipped with 24 Vicon MXT40S cameras rigidly placed on the walls, while a portable volumetric capturing system (https://github.com/VCL3D/VolumetricCapture) with 4 Intel RealSense D415 depth sensors was temporarily set up to capture the RGBD data cues.
 
