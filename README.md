@@ -16,7 +16,7 @@ For data that are not publicly available but are included in the [HUMAN4D datase
 Pictures taken during the preparation and capturing of the HUMAN4D dataset. The room was equipped with 24 Vicon MXT40S cameras rigidly placed on the walls, while a portable volumetric capturing system (https://github.com/VCL3D/VolumetricCapture) with 4 Intel RealSense D415 depth sensors was temporarily set up to capture the RGBD data cues.
 
 ![alt text](https://raw.githubusercontent.com/tofis/myurls/master/human4d/imgs/rgbd2.png)
-HW-SYNCed multi-view RGBD samples (4 RGBD frames each) from "stretching_n_talking"(top) and "basket-ball_dribbling"(bottom) activities. 
+HW-SYNCed multi-view RGBD samples (4 RGBD frames each) from "stretching_n_talking" (top) and "basket-ball_dribbling" (bottom) activities. 
 
 ![alt text](https://raw.githubusercontent.com/tofis/myurls/master/human4d/imgs/actor_bodyscan_s.png)
 3D Scanning using a custom photogrammetry rig with 96 cameras, photos were taken of the actor (left) and reconstructed into a 3D textured mesh using Agisoft Metashape (right).
