@@ -10,7 +10,7 @@ You can download the dataset from Zenodo (in various parts):
 - https://zenodo.org/record/4483817#.YH6n5OgzaUk
 - https://zenodo.org/record/4484110#.YH6n-ugzaUk
 
-For data that are not publicly available but are included in the [HUMAN4D dataset](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9204617), contact us @ tofis3d [at] central.ntua.gr.
+For data that are not publicly available but are included in the [HUMAN4D dataset](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9204617), contact us @ tofis3d [at] gmail.com.
 
 ![alt text](https://raw.githubusercontent.com/tofis/myurls/master/human4d/imgs/facilities.png)
 Pictures taken during the preparation and capturing of the HUMAN4D dataset. The room was equipped with 24 Vicon MXT40S cameras rigidly placed on the walls, while a portable volumetric capturing system (https://github.com/VCL3D/VolumetricCapture) with 4 Intel RealSense D415 depth sensors was temporarily set up to capture the RGBD data cues.
